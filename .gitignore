@@ -1,0 +1,9 @@
+# Ignore database & cache files
+birds.db
+species_cache.json
+
+# Ignore images (keep them local)
+public/images/
+
+# Ignore Node.js dependencies (optional, since we can reinstall)
+node_modules/

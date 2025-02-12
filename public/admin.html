@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin - Bird Photos</title>
+    <link rel="stylesheet" href="styles.css">
+    <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&display=swap" rel="stylesheet">
+</head>
+<body>
+    <h1>Admin - Bird Photos</h1>
+    <p>Add or remove species, update locations</p>
+
+    <div class="filter-container">
+        <label for="species-filter">Filter by species:</label>
+        <select id="species-filter" onchange="filterPhotos()">
+            <option value="all">All Species</option>
+        </select>
+    </div>
+
+    <div id="photo-gallery"></div>
+
+    <script src="script.js"></script>
+</body>
+</html>

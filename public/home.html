@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bird Photos</title>
+    <link rel="stylesheet" href="styles.css">
+    <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&display=swap" rel="stylesheet">
+</head>
+<body>
+    <h1>Bird Photos</h1>
+    <p>A log of bird sightings around towns</p>
+
+    <!-- 🔹 Species Filter Dropdown -->
+    <div class="filter-container">
+        <label for="species-filter">Filter by species:</label>
+        <select id="species-filter" onchange="filterPhotos()">
+            <option value="all">All Species</option>
+        </select>
+    </div>
+
+    <div id="photo-gallery"></div>
+
+    <script>
+        let allPhotos = [];
+
+        function fetchPhotos() {
+            fetch("http://localhost:3000/api/photos")  // ✅ Using the formatted date API
+                .then(response => response.json())
+                .then(photos => {
+                    allPhotos = photos;
+                    populateSpeciesFilter(photos);
+                    displayPhotos(photos);
+                })
+                .catch(error => console.error("Error fetching photos:", error));
+        }
+
+        function populateSpeciesFilter(photos) {
+            const filterDropdown = document.getElementById("species-filter");
+            filterDropdown.innerHTML = `<option value="all">All Species</option>`;
+
+            const uniqueSpecies = new Set();
+            photos.forEach(photo => {
+                if (photo.species_names) {
+                    photo.species_names.split(", ").forEach(species => uniqueSpecies.add(species));
+                }
+            });
+
+            uniqueSpecies.forEach(species => {
+                const option = document.createElement("option");
+                option.value = species;
+                option.textContent = species;
+                filterDropdown.appendChild(option);
+            });
+        }
+
+        function filterPhotos() {
+            const selectedSpecies = document.getElementById("species-filter").value;
+            if (selectedSpecies === "all") {
+                displayPhotos(allPhotos);
+            } else {
+                const filteredPhotos = allPhotos.filter(photo =>
+                    photo.species_names && photo.species_names.includes(selectedSpecies)
+                );
+                displayPhotos(filteredPhotos);
+            }
+        }
+
+        function displayPhotos(photos) {
+            const gallery = document.getElementById("photo-gallery");
+            gallery.innerHTML = "";
+
+            photos.forEach(photo => {
+                const photoCard = document.createElement("div");
+                photoCard.className = "photo-card";
+
+                let speciesText = photo.species_names !== "Unknown"
+                    ? `<p><strong>Species:</strong> ${photo.species_names}</p>`
+                    : "<p><strong>Species:</strong> Unknown</p>";
+
+                photoCard.innerHTML = `
+                    <img src="http://localhost:3000${photo.image_filename}" alt="Bird Photo">
+                    <p><strong>Date:</strong> ${photo.date_taken}</p>
+                    <p><strong>Location:</strong> ${photo.location ? photo.location : "Unknown"}</p>
+                    ${speciesText}
+                `;
+
+                gallery.appendChild(photoCard);
+            });
+        }
+
+        document.addEventListener("DOMContentLoaded", fetchPhotos);
+    </script>
+</body>
+</html>

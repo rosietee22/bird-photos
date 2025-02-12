@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bird Pictures</title>
+    <link rel="stylesheet" href="styles.css">
+    <link rel="icon" type="image/png" href="images/favicon.png"> 
+    <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&display=swap" rel="stylesheet">
+</head>
+
+<body>
+    <h1>Bird Pictures</h1>
+    <p class="subheading">Coming Soon</p>
+
+    <!-- Slideshow Container -->
+    <div class="slideshow-container">
+        <img class="slide" src="images/bird1.jpg" alt="Bird Photo">
+        <img class="slide" src="images/bird2.jpg" alt="Bird Photo">
+        <img class="slide" src="images/bird3.jpg" alt="Bird Photo">
+    </div>
+
+    <script>
+
+        let slideIndex = 0;
+        const slides = document.querySelectorAll(".slide");
+        const slideDuration = 3500; // Increased to 4 seconds
+
+        function showSlides() {
+            slides.forEach(slide => slide.style.display = "none"); // Hide all slides
+            slideIndex++;
+            if (slideIndex > slides.length) { slideIndex = 1; } // Loop back to the start
+            slides[slideIndex - 1].style.display = "block"; // Show current slide
+            setTimeout(showSlides, slideDuration);
+        }
+
+        document.addEventListener("DOMContentLoaded", showSlides);
+
+    </script>
+</body>
+
+</html>
