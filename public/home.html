@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -7,8 +8,9 @@
     <link rel="stylesheet" href="styles.css">
     <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&display=swap" rel="stylesheet">
 </head>
+
 <body>
-    <h1>Bird Photos</h1>
+    <img src="assets/logo.svg" alt="Bird Pictures Logo" class="logo">
     <p>A log of bird sightings around towns</p>
 
     <!-- 🔹 Species Filter Dropdown -->
@@ -21,6 +23,7 @@
 
     <div id="photo-gallery"></div>
 
+    <a style="color: aliceblue;" href="admin.html">Admin Area</a>
     <script>
         let allPhotos = [];
 
@@ -74,22 +77,39 @@
                 const photoCard = document.createElement("div");
                 photoCard.className = "photo-card";
 
+                // ✅ Format Date
+                let formattedDate = "Unknown date";
+                if (photo.date_taken) {
+                    const dateObj = new Date(photo.date_taken);
+                    formattedDate = dateObj.toLocaleDateString("en-GB", {
+                        day: "2-digit",
+                        month: "long",
+                        year: "numeric",
+                    });
+                }
+
+                // ✅ Format Location
+                let formattedLocation = photo.location && photo.location.toLowerCase() !== "unknown" ? `, ${photo.location}` : "";
+                const dateLocation = `${formattedDate}${formattedLocation}`;
+
                 let speciesText = photo.species_names !== "Unknown"
                     ? `<p><strong>Species:</strong> ${photo.species_names}</p>`
                     : "<p><strong>Species:</strong> Unknown</p>";
 
+                // ✅ Updated HTML structure with Date + Location at the top-left
                 photoCard.innerHTML = `
-                    <img src="http://localhost:3000${photo.image_filename}" alt="Bird Photo">
-                    <p><strong>Date:</strong> ${photo.date_taken}</p>
-                    <p><strong>Location:</strong> ${photo.location ? photo.location : "Unknown"}</p>
-                    ${speciesText}
-                `;
+            <div class="photo-info">${dateLocation}</div>  <!-- ✅ New Date & Location -->
+            <img src="http://localhost:3000${photo.image_filename}" alt="Bird Photo">
+            ${speciesText}
+        `;
 
                 gallery.appendChild(photoCard);
             });
         }
 
+
         document.addEventListener("DOMContentLoaded", fetchPhotos);
     </script>
 </body>
+
 </html>

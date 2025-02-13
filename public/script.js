@@ -50,12 +50,12 @@ function updateSpecies(photoId) {
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ photo_id: photoId, common_name: speciesName })
         })
-        .then(response => response.json())
-        .then(data => {
-            console.log("Server Response:", data); // ✅ Debugging log
-            updateBirdCard(photoId);
-        })
-        .catch(error => console.error("❌ Error updating species:", error));
+            .then(response => response.json())
+            .then(data => {
+                console.log("Server Response:", data); // ✅ Debugging log
+                updateBirdCard(photoId);
+            })
+            .catch(error => console.error("❌ Error updating species:", error));
     }
 }
 
@@ -107,24 +107,24 @@ function updateLocation(photoId) {
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ photo_id: photoId, location })
         })
-        .then(response => response.json())
-        .then(() => {
-            fetch("http://localhost:3000/api/photos")
-                .then(response => response.json())
-                .then(photos => {
-                    const photo = photos.find(p => p.id === photoId);
-                    if (!photo) return;
+            .then(response => response.json())
+            .then(() => {
+                fetch("http://localhost:3000/api/photos")
+                    .then(response => response.json())
+                    .then(photos => {
+                        const photo = photos.find(p => p.id === photoId);
+                        if (!photo) return;
 
-                    const card = document.getElementById(`bird-card-${photoId}`);
-                    if (card) {
-                        const locationContainer = card.querySelector("p.location-text");
-                        if (locationContainer) {
-                            locationContainer.innerHTML = `<strong>Location:</strong> ${photo.location} <button onclick="editLocation(${photo.id})">Edit</button>`;
+                        const card = document.getElementById(`bird-card-${photoId}`);
+                        if (card) {
+                            const locationContainer = card.querySelector("p.location-text");
+                            if (locationContainer) {
+                                locationContainer.innerHTML = `<strong>Location:</strong> ${photo.location} <button onclick="editLocation(${photo.id})">Edit</button>`;
+                            }
                         }
-                    }
-                });
-        })
-        .catch(error => console.error("❌ Error updating location:", error));
+                    });
+            })
+            .catch(error => console.error("❌ Error updating location:", error));
     }
 }
 
@@ -169,21 +169,36 @@ function displayPhotos(photos) {
         photoCard.className = "photo-card";
         photoCard.id = `bird-card-${photo.id}`;
 
+        // ✅ Format Date
+        let formattedDate = "Unknown date";
+        if (photo.date_taken) {
+            const dateObj = new Date(photo.date_taken);
+            formattedDate = dateObj.toLocaleDateString("en-GB", {
+                day: "2-digit",
+                month: "long",
+                year: "numeric",
+            });
+        }
+
+        // ✅ Format Location
+        let formattedLocation = photo.location && photo.location.toLowerCase() !== "unknown" ? `, ${photo.location}` : "";
+        const dateLocation = `${formattedDate}${formattedLocation}`;
+
         let speciesArray = photo.species_names ? photo.species_names.split(", ") : [];
-        let speciesList = speciesArray.length > 0 ?
-            speciesArray.map(species => `
+        let speciesList = speciesArray.length > 0
+            ? speciesArray.map(species => `
                 <span class="species-tag">
                     ${species} <span class="remove-species" onclick="removeSpecies('${photo.id}', '${species}')">✖</span>
                 </span>
             `).join(" ") : "<span class='species-tag unknown'>Unknown</span>";
 
         let isLocationEditable = !photo.location || photo.location.toLowerCase() === "unknown";
-        let locationText = isLocationEditable ? 
-            `<p class="location-text"><strong>Location:</strong> 
+        let locationText = isLocationEditable
+            ? `<p class="location-text"><strong>Location:</strong> 
                 <input type="text" id="location-${photo.id}" placeholder="Enter location">
                 <button onclick="updateLocation(${photo.id})">Save</button>
-            </p>` : 
-            `<p class="location-text"><strong>Location:</strong> ${photo.location} <button onclick="editLocation(${photo.id})">Edit</button></p>`;
+            </p>`
+            : `<p class="location-text"><strong>Location:</strong> ${photo.location} <button onclick="editLocation(${photo.id})">Edit</button></p>`;
 
         const speciesInput = `
             <div class="autocomplete-container">
@@ -193,10 +208,10 @@ function displayPhotos(photos) {
             </div>
         `;
 
+        // ✅ Updated HTML structure with Date + Location at the top-left
         photoCard.innerHTML = `
+            <div class="photo-info">${dateLocation}</div>  <!-- ✅ New formatted Date & Location -->
             <img src="http://localhost:3000${photo.image_filename}" alt="Bird Photo">
-            <p><strong>Date:</strong> ${photo.date_taken}</p>
-            ${locationText}
             <p><strong>Species:</strong> <span id="species-container-${photo.id}">${speciesList}</span></p>
             ${speciesInput}
         `;
@@ -204,6 +219,8 @@ function displayPhotos(photos) {
         gallery.appendChild(photoCard);
     });
 }
+
+
 
 function removeSpecies(photoId, speciesName) {
     console.log(`Removing species: ${speciesName} from photo ID: ${photoId}`); // Debugging log
@@ -213,12 +230,12 @@ function removeSpecies(photoId, speciesName) {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ photo_id: photoId, common_name: speciesName })
     })
-    .then(response => response.json())
-    .then(data => {
-        console.log("Server Response:", data); // Debugging response
-        updateBirdCard(photoId); // Refresh only this bird's card
-    })
-    .catch(error => console.error("❌ Error removing species:", error));
+        .then(response => response.json())
+        .then(data => {
+            console.log("Server Response:", data); // Debugging response
+            updateBirdCard(photoId); // Refresh only this bird's card
+        })
+        .catch(error => console.error("❌ Error removing species:", error));
 }
 
 

@@ -6,26 +6,26 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Bird Pictures</title>
     <link rel="stylesheet" href="styles.css">
-    <link rel="icon" type="image/png" href="images/favicon.png"> 
-    <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&display=swap" rel="stylesheet">
+    <link rel="icon" type="image/png" href="assets/favicon.png"> 
 </head>
 
-<body>
-    <h1>Bird Pictures</h1>
-    <p class="subheading">Coming Soon</p>
+<body class="index-page">
+    <img src="assets/logo.svg" alt="Bird Pictures Logo" class="logo">
+    <br>
+    <a href="home.html" class="button">ENTER</a>
 
     <!-- Slideshow Container -->
     <div class="slideshow-container">
-        <img class="slide" src="images/bird1.jpg" alt="Bird Photo">
-        <img class="slide" src="images/bird2.jpg" alt="Bird Photo">
-        <img class="slide" src="images/bird3.jpg" alt="Bird Photo">
+        <img class="slide" src="assets/bird1.jpg" alt="Bird Photo">
+        <img class="slide" src="assets/bird2.jpg" alt="Bird Photo">
+        <img class="slide" src="assets/bird3.jpg" alt="Bird Photo"> 
     </div>
 
     <script>
 
         let slideIndex = 0;
         const slides = document.querySelectorAll(".slide");
-        const slideDuration = 3500; // Increased to 4 seconds
+        const slideDuration = 2500; // 2.5 seconds
 
         function showSlides() {
             slides.forEach(slide => slide.style.display = "none"); // Hide all slides
