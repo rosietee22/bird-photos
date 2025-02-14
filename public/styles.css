@@ -55,7 +55,7 @@ a {
 .button {
     display: inline-block;
     padding: 8px 16px;
-    background-color: white;
+    background-color: #f7f7f7;
     color: #1a00e8;
     text-decoration: none;
     font-size: 16px;
