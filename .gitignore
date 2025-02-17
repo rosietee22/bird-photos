@@ -9,3 +9,4 @@ public/images/
 node_modules/
 
 bird-pictures-953b0.json
+*.json
