@@ -65,8 +65,8 @@ a {
 }
 
 .button:hover {
-    background-color: white;
-    color: black;
+    background-color: #f7f7f7;
+    color: #1a00e8;
 }
 
 
@@ -202,6 +202,7 @@ a {
     font-size: 16px;
     text-align: center;
     max-width: 100%;
+    font-style: italic;
 }
 
 /* Ensure the photo-card allows absolute positioning */

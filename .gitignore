@@ -7,3 +7,5 @@ public/images/
 
 # Ignore Node.js dependencies (optional, since we can reinstall)
 node_modules/
+
+bird-pictures-953b0.json

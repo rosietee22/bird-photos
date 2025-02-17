@@ -1,7 +1,9 @@
 import os
 import sqlite3
 import exifread
+import requests
 from datetime import datetime
+from google.cloud import storage  # ✅ Import Firebase Storage library
 from geopy.geocoders import Nominatim
 from geopy.exc import GeocoderTimedOut
 import time
@@ -11,14 +13,28 @@ ssl._create_default_https_context = ssl._create_unverified_context
 
 geolocator = Nominatim(user_agent="MyBirdPhotoApp")
 
+# ✅ Initialize Firebase Storage client
+storage_client = storage.Client()
+bucket_name = "your-firebase-bucket-name"  # 🔹 Replace with your actual bucket name
+bucket = storage_client.bucket(bucket_name)
+
 def convert_to_decimal(gps_data):
     degrees, minutes, seconds = gps_data
     return float(degrees) + (float(minutes) / 60) + (float(seconds.num) / float(seconds.den) / 3600)
 
-def extract_metadata(image_path):
-    with open(image_path, 'rb') as image_file:
-        tags = exifread.process_file(image_file)
+def extract_metadata(image_url):
+    """Download the image temporarily to read metadata"""
+    try:
+        response = requests.get(image_url, stream=True)
+        response.raise_for_status()
         
+        with open("temp_image.jpg", "wb") as temp_file:
+            for chunk in response.iter_content(1024):
+                temp_file.write(chunk)
+
+        with open("temp_image.jpg", 'rb') as image_file:
+            tags = exifread.process_file(image_file)
+
         date_taken_raw = tags.get('EXIF DateTimeOriginal')
         date_taken = None
         if date_taken_raw:
@@ -43,66 +59,68 @@ def extract_metadata(image_path):
                 except GeocoderTimedOut:
                     time.sleep(2)
 
+    except Exception as e:
+        print(f"❌ Error fetching metadata for {image_url}: {e}")
+        date_taken, latitude, longitude, city_name = None, None, None, "Unknown"
+
     return {
-        "image_filename": f"/images/{os.path.basename(image_path)}",  # Add /images/ prefix
+        "image_url": image_url,  
         "date_taken": date_taken,
         "latitude": latitude,
         "longitude": longitude,
         "location": city_name
     }
 
-def sync_database_with_folder(folder_path):
+def sync_database_with_firebase():
     conn = sqlite3.connect("birds.db")
     cursor = conn.cursor()
 
+    # ✅ Get all existing images from the database
     cursor.execute("SELECT image_filename FROM bird_photos")
     stored_images = {row[0] for row in cursor.fetchall()}
-    folder_images = {f"/images/{file}" for file in os.listdir(folder_path) if file.lower().endswith(('.jpg', '.jpeg', '.png'))}
 
-    missing_images = stored_images - folder_images
+    # ✅ Get all images from Firebase Storage
+    blobs = bucket.list_blobs()
+    firebase_images = {blob.public_url for blob in blobs if blob.name.lower().endswith(('.jpg', '.jpeg', '.png'))}
+
+    # 🗑️ Delete images from the database that no longer exist in Firebase
+    missing_images = stored_images - firebase_images
     for missing in missing_images:
         cursor.execute("DELETE FROM bird_photos WHERE image_filename = ?", (missing,))
-        print(f"🗑️ Deleted {missing} from the database (image no longer in folder).")
+        print(f"🗑️ Deleted {missing} from the database (image no longer in Firebase).")
 
     conn.commit()
     conn.close()
 
-def insert_new_images(folder_path):
+def insert_new_images_from_firebase():
     conn = sqlite3.connect("birds.db")
     cursor = conn.cursor()
 
-    for filename in os.listdir(folder_path):
-        if filename.lower().endswith(('.jpg', '.jpeg', '.png')):
-            image_filename = f"/images/{filename}"  # Ensure consistent filename format
+    blobs = bucket.list_blobs()
+    firebase_images = {blob.public_url for blob in blobs if blob.name.lower().endswith(('.jpg', '.jpeg', '.png'))}
 
-            # ✅ Check if the image already exists in the database
-            cursor.execute("SELECT 1 FROM bird_photos WHERE image_filename = ?", (image_filename,))
-            exists = cursor.fetchone()
+    for image_url in firebase_images:
+        cursor.execute("SELECT 1 FROM bird_photos WHERE image_filename = ?", (image_url,))
+        exists = cursor.fetchone()
 
-            if not exists:
-                # 🆕 New image: Extract metadata and insert into the database
-                image_path = os.path.join(folder_path, filename)
-                image_data = extract_metadata(image_path)
+        if not exists:
+            # 🆕 Extract metadata and insert into the database
+            image_data = extract_metadata(image_url)
 
-                cursor.execute("""
-                    INSERT INTO bird_photos (image_filename, date_taken, location, latitude, longitude)
-                    VALUES (?, ?, ?, ?, ?)
-                """, (image_filename, image_data['date_taken'], image_data['location'], image_data['latitude'], image_data['longitude']))
-                print(f"✅ Inserted {image_filename} into the database.")
+            cursor.execute("""
+                INSERT INTO bird_photos (image_filename, date_taken, location, latitude, longitude)
+                VALUES (?, ?, ?, ?, ?)
+            """, (image_url, image_data['date_taken'], image_data['location'], image_data['latitude'], image_data['longitude']))
+            print(f"✅ Inserted {image_url} into the database.")
 
     conn.commit()
     conn.close()
 
-def process_images(folder_path):
-    if not os.path.exists(folder_path):
-        print(f"Error: Folder '{folder_path}' not found.")
-        return
-    
-    print("\n🔄 Syncing database with folder (checking for added or deleted images)...")
-    sync_database_with_folder(folder_path)  # ✅ Only delete missing images
-    insert_new_images(folder_path)  # ✅ Only insert new images
+def process_images():
+    print("\n🔄 Syncing database with Firebase Storage...")
+    sync_database_with_firebase()  # ✅ Only delete missing images
+    insert_new_images_from_firebase()  # ✅ Only insert new images
 
     print("\n✅ Database sync complete!")
 
-folder_path = "public/images"
-process_images(folder_path)
+process_images()

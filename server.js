@@ -53,7 +53,7 @@ async function preloadSpecies() {
 
 preloadSpecies();
 
-// **Fetch Photos (Sorted by Date)**
+// **Fetch Photos (Sorted Randomly)**
 app.get('/api/photos', (req, res) => {
     const query = `
         SELECT bird_photos.id, bird_photos.image_filename, bird_photos.date_taken, bird_photos.location, 
@@ -63,7 +63,7 @@ app.get('/api/photos', (req, res) => {
         LEFT JOIN bird_photo_species ON bird_photos.id = bird_photo_species.photo_id
         LEFT JOIN bird_species ON bird_photo_species.species_id = bird_species.id
         GROUP BY bird_photos.id
-        ORDER BY bird_photos.date_taken DESC  -- 🔹 Sort by newest first
+        ORDER BY RANDOM()  -- 🔹 Now sorted randomly!
     `;
 
     db.all(query, [], (err, rows) => {
@@ -80,6 +80,7 @@ app.get('/api/photos', (req, res) => {
         res.json(rows);
     });
 });
+
 
 
 // **Species Suggestions (Instant Search)**
