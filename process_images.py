@@ -3,31 +3,44 @@ import sqlite3
 import exifread
 import requests
 from datetime import datetime
-from google.cloud import storage  # ✅ Import Firebase Storage library
+from google.cloud import storage
 from geopy.geocoders import Nominatim
 from geopy.exc import GeocoderTimedOut
 import time
 import ssl
+import json
+from google.oauth2 import service_account
+
+# ✅ Load Firebase credentials from environment variable
+credentials_json = os.getenv("GOOGLE_APPLICATION_CREDENTIALS_JSON")
+
+if credentials_json:
+    credentials_dict = json.loads(credentials_json)
+    credentials = service_account.Credentials.from_service_account_info(credentials_dict)
+    storage_client = storage.Client(credentials=credentials)
+else:
+    raise ValueError("❌ GOOGLE_APPLICATION_CREDENTIALS_JSON is not set in environment variables")
 
 ssl._create_default_https_context = ssl._create_unverified_context
 
 geolocator = Nominatim(user_agent="MyBirdPhotoApp")
 
-# ✅ Initialize Firebase Storage client
-storage_client = storage.Client()
-bucket_name = "your-firebase-bucket-name"  # 🔹 Replace with your actual bucket name
+# ✅ Firebase bucket settings
+bucket_name = "bird-pictures-953b0.appspot.com"  # 🔹 Replace with your actual bucket name
 bucket = storage_client.bucket(bucket_name)
+firebase_base_url = f"https://storage.googleapis.com/{bucket_name}/"
 
 def convert_to_decimal(gps_data):
+    """Convert GPS data to decimal format."""
     degrees, minutes, seconds = gps_data
     return float(degrees) + (float(minutes) / 60) + (float(seconds.num) / float(seconds.den) / 3600)
 
 def extract_metadata(image_url):
-    """Download the image temporarily to read metadata"""
+    """Download the image temporarily to extract metadata."""
     try:
         response = requests.get(image_url, stream=True)
         response.raise_for_status()
-        
+
         with open("temp_image.jpg", "wb") as temp_file:
             for chunk in response.iter_content(1024):
                 temp_file.write(chunk)
@@ -64,7 +77,7 @@ def extract_metadata(image_url):
         date_taken, latitude, longitude, city_name = None, None, None, "Unknown"
 
     return {
-        "image_url": image_url,  
+        "image_url": image_url,
         "date_taken": date_taken,
         "latitude": latitude,
         "longitude": longitude,
@@ -72,16 +85,17 @@ def extract_metadata(image_url):
     }
 
 def sync_database_with_firebase():
+    """Sync database by removing images that are no longer in Firebase."""
     conn = sqlite3.connect("birds.db")
     cursor = conn.cursor()
 
-    # ✅ Get all existing images from the database
+    # ✅ Get all existing image URLs from the database
     cursor.execute("SELECT image_filename FROM bird_photos")
     stored_images = {row[0] for row in cursor.fetchall()}
 
     # ✅ Get all images from Firebase Storage
     blobs = bucket.list_blobs()
-    firebase_images = {blob.public_url for blob in blobs if blob.name.lower().endswith(('.jpg', '.jpeg', '.png'))}
+    firebase_images = {firebase_base_url + blob.name for blob in blobs if blob.name.lower().endswith(('.jpg', '.jpeg', '.png'))}
 
     # 🗑️ Delete images from the database that no longer exist in Firebase
     missing_images = stored_images - firebase_images
@@ -93,11 +107,12 @@ def sync_database_with_firebase():
     conn.close()
 
 def insert_new_images_from_firebase():
+    """Insert new images from Firebase Storage into the database."""
     conn = sqlite3.connect("birds.db")
     cursor = conn.cursor()
 
     blobs = bucket.list_blobs()
-    firebase_images = {blob.public_url for blob in blobs if blob.name.lower().endswith(('.jpg', '.jpeg', '.png'))}
+    firebase_images = {firebase_base_url + blob.name for blob in blobs if blob.name.lower().endswith(('.jpg', '.jpeg', '.png'))}
 
     for image_url in firebase_images:
         cursor.execute("SELECT 1 FROM bird_photos WHERE image_filename = ?", (image_url,))
@@ -117,9 +132,10 @@ def insert_new_images_from_firebase():
     conn.close()
 
 def process_images():
+    """Main function to process images from Firebase."""
     print("\n🔄 Syncing database with Firebase Storage...")
-    sync_database_with_firebase()  # ✅ Only delete missing images
-    insert_new_images_from_firebase()  # ✅ Only insert new images
+    sync_database_with_firebase()  # ✅ Remove missing images
+    insert_new_images_from_firebase()  # ✅ Add new images
 
     print("\n✅ Database sync complete!")
 
