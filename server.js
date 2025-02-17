@@ -8,7 +8,7 @@ const { exec } = require('child_process');
 const { format } = require('date-fns');
 
 const app = express();
-const db = new sqlite3.Database('./birds.db');
+const db = new sqlite3.Database('/persistent/birds.db');
 const IMAGES_FOLDER = path.join(__dirname, 'public/images');
 
 app.use(cors());
@@ -53,7 +53,8 @@ async function preloadSpecies() {
 
 preloadSpecies();
 
-// **Fetch Photos (Sorted Randomly)**
+
+
 app.get('/api/photos', (req, res) => {
     const query = `
         SELECT bird_photos.id, bird_photos.image_filename, bird_photos.date_taken, bird_photos.location, 
@@ -63,7 +64,7 @@ app.get('/api/photos', (req, res) => {
         LEFT JOIN bird_photo_species ON bird_photos.id = bird_photo_species.photo_id
         LEFT JOIN bird_species ON bird_photo_species.species_id = bird_species.id
         GROUP BY bird_photos.id
-        ORDER BY RANDOM()  -- 🔹 Now sorted randomly!
+        ORDER BY RANDOM()
     `;
 
     db.all(query, [], (err, rows) => {
@@ -76,10 +77,15 @@ app.get('/api/photos', (req, res) => {
             if (row.date_taken) {
                 row.date_taken = format(new Date(row.date_taken), "d MMMM yyyy");
             }
+
+            // 🔹 Convert filename to Firebase Storage URL with token
+            row.image_filename = `https://firebasestorage.googleapis.com/v0/b/bird-pictures-953b0.firebasestorage.app/o/${encodeURIComponent(row.image_filename)}?alt=media`;
         });
+
         res.json(rows);
     });
 });
+
 
 
 
@@ -192,6 +198,23 @@ app.post('/api/remove-species', (req, res) => {
             }
             res.json({ message: "✅ Species removed successfully!" });
         });
+    });
+});
+
+app.get('/api/species-suggestions-ai', (req, res) => {
+    const query = `
+        SELECT id, image_filename, species_suggestions 
+        FROM bird_photos
+        WHERE species_suggestions IS NOT NULL
+    `;
+
+    db.all(query, [], (err, rows) => {
+        if (err) {
+            console.error("❌ Database Error:", err);
+            return res.status(500).json({ error: "Error fetching AI species suggestions" });
+        }
+
+        res.json(rows);
     });
 });
 

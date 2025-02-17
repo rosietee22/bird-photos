@@ -159,7 +159,6 @@ function filterPhotos() {
     }
 }
 
-
 function displayPhotos(photos) {
     const gallery = document.getElementById("photo-gallery");
     gallery.innerHTML = "";
@@ -168,6 +167,9 @@ function displayPhotos(photos) {
         const photoCard = document.createElement("div");
         photoCard.className = "photo-card";
         photoCard.id = `bird-card-${photo.id}`;
+
+        // ✅ Use the Firebase URL directly without `localhost`
+        const imageUrl = photo.image_filename;
 
         // ✅ Format Date
         let formattedDate = "Unknown date";
@@ -184,6 +186,12 @@ function displayPhotos(photos) {
         let formattedLocation = photo.location && photo.location.toLowerCase() !== "unknown" ? `, ${photo.location}` : "";
         const dateLocation = `${formattedDate}${formattedLocation}`;
 
+        // ✅ Show AI Species Suggestions
+        let aiSuggestions = photo.species_suggestions ? photo.species_suggestions.split(", ") : ["Unknown"];
+        let aiSuggestionsList = aiSuggestions.map(species => `
+            <span class="species-tag ai-suggestion">${species}</span>
+        `).join(" ");
+
         let speciesArray = photo.species_names ? photo.species_names.split(", ") : [];
         let speciesList = speciesArray.length > 0
             ? speciesArray.map(species => `
@@ -192,32 +200,36 @@ function displayPhotos(photos) {
                 </span>
             `).join(" ") : "<span class='species-tag unknown'>Unknown</span>";
 
-        let isLocationEditable = !photo.location || photo.location.toLowerCase() === "unknown";
-        let locationText = isLocationEditable
-            ? `<p class="location-text"><strong>Location:</strong> 
-                <input type="text" id="location-${photo.id}" placeholder="Enter location">
-                <button onclick="updateLocation(${photo.id})">Save</button>
-            </p>`
-            : `<p class="location-text"><strong>Location:</strong> ${photo.location} <button onclick="editLocation(${photo.id})">Edit</button></p>`;
+        // ✅ AI Confirmation Button
+        const confirmAIButton = aiSuggestions.length > 0 && aiSuggestions[0] !== "Unknown" ? `
+            <button class="confirm-ai" onclick="confirmAISpecies(${photo.id}, '${aiSuggestions[0]}')">Confirm</button>
+        ` : "";
 
-        const speciesInput = `
-            <div class="autocomplete-container">
-                <input type="text" id="species-${photo.id}" placeholder="Enter species name" oninput="fetchSpeciesSuggestions(${photo.id})">
-                <div id="species-dropdown-${photo.id}" class="species-dropdown"></div>
-                <button onclick="updateSpecies(${photo.id})">Save</button>
-            </div>
-        `;
-
-        // ✅ Updated HTML structure with Date + Location at the top-left
+        // ✅ Fixed Image URL!
         photoCard.innerHTML = `
-            <div class="photo-info">${dateLocation}</div>  <!-- ✅ New formatted Date & Location -->
-            <img src="http://localhost:3000${photo.image_filename}" alt="Bird Photo">
+            <div class="photo-info">${dateLocation}</div>
+            <img src="${imageUrl}" alt="Bird Photo"> <!-- 🔹 Now using only Firebase URL -->
+            <p><strong>AI Suggested:</strong> ${aiSuggestionsList} ${confirmAIButton}</p>
             <p><strong>Species:</strong> <span id="species-container-${photo.id}">${speciesList}</span></p>
-            ${speciesInput}
         `;
 
         gallery.appendChild(photoCard);
     });
+}
+
+
+function confirmAISpecies(photoId, speciesName) {
+    fetch("http://localhost:3000/api/update-species", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ photo_id: photoId, common_name: speciesName })
+    })
+    .then(response => response.json())
+    .then(data => {
+        console.log("Server Response:", data);
+        updateBirdCard(photoId); // ✅ Refresh bird card
+    })
+    .catch(error => console.error("❌ Error confirming AI species:", error));
 }
 
 

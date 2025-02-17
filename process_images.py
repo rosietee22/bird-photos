@@ -11,24 +11,37 @@ import ssl
 import json
 from google.oauth2 import service_account
 
-# ✅ Load Firebase credentials from environment variable
-credentials_json = os.getenv("GOOGLE_APPLICATION_CREDENTIALS_JSON")
 
-if credentials_json:
-    credentials_dict = json.loads(credentials_json)
+# ✅ Load Firebase credentials correctly
+if os.path.exists("bird-pictures-953b0-firebase-adminsdk-fbsvc-dd097fdf21.json"):
+    with open("bird-pictures-953b0-firebase-adminsdk-fbsvc-dd097fdf21.json", "r") as f:
+        credentials_dict = json.load(f)
     credentials = service_account.Credentials.from_service_account_info(credentials_dict)
-    storage_client = storage.Client(credentials=credentials)
 else:
-    raise ValueError("❌ GOOGLE_APPLICATION_CREDENTIALS_JSON is not set in environment variables")
+    credentials_json = os.getenv("GOOGLE_APPLICATION_CREDENTIALS_JSON")
+    if credentials_json:
+        credentials_dict = json.loads(credentials_json)
+        credentials = service_account.Credentials.from_service_account_info(credentials_dict)
+    else:
+        raise ValueError("❌ No valid Firebase credentials found.")
+
+storage_client = storage.Client(credentials=credentials)
 
 ssl._create_default_https_context = ssl._create_unverified_context
-
 geolocator = Nominatim(user_agent="MyBirdPhotoApp")
 
 # ✅ Firebase bucket settings
-bucket_name = "bird-pictures-953b0.appspot.com"  # 🔹 Replace with your actual bucket name
+bucket_name = "bird-pictures-953b0.firebasestorage.app"
 bucket = storage_client.bucket(bucket_name)
-firebase_base_url = f"https://storage.googleapis.com/{bucket_name}/"
+firebase_base_url = "https://firebasestorage.googleapis.com/v0/b/bird-pictures-953b0.appspot.com/o/"
+
+def get_firebase_image_url(blob_name):
+    """Generate the correct Firebase Storage public URL"""
+    return f"{firebase_base_url}{blob_name}?alt=media"
+
+# ✅ Fetch all image blobs from Firebase
+blobs = bucket.list_blobs()
+firebase_images = {get_firebase_image_url(blob.name) for blob in blobs if blob.name.lower().endswith(('.jpg', '.jpeg', '.png'))}
 
 def convert_to_decimal(gps_data):
     """Convert GPS data to decimal format."""
@@ -84,6 +97,29 @@ def extract_metadata(image_url):
         "location": city_name
     }
 
+# ✅ Corrected iNaturalist API Image Recognition
+INATURALIST_API_URL = "https://api.inaturalist.org/v1/computervision/score_image"
+
+def get_species_suggestions(image_url):
+    """Send an image to iNaturalist API for species recognition."""
+    try:
+        response = requests.get(image_url, stream=True)
+        response.raise_for_status()
+
+        files = {"image": ("bird.jpg", response.content)}
+        api_response = requests.post(INATURALIST_API_URL, files=files)
+        api_response.raise_for_status()
+        data = api_response.json()
+
+        species_suggestions = [
+            entry["taxon"]["name"] for entry in data.get("results", [])[:3]
+        ]
+        return ", ".join(species_suggestions) if species_suggestions else "Unknown"
+
+    except Exception as e:
+        print(f"❌ AI Error fetching species for {image_url}: {e}")
+        return "Unknown"
+
 def sync_database_with_firebase():
     """Sync database by removing images that are no longer in Firebase."""
     conn = sqlite3.connect("birds.db")
@@ -95,7 +131,7 @@ def sync_database_with_firebase():
 
     # ✅ Get all images from Firebase Storage
     blobs = bucket.list_blobs()
-    firebase_images = {firebase_base_url + blob.name for blob in blobs if blob.name.lower().endswith(('.jpg', '.jpeg', '.png'))}
+    firebase_images = {get_firebase_image_url(blob.name) for blob in blobs if blob.name.lower().endswith(('.jpg', '.jpeg', '.png'))}
 
     # 🗑️ Delete images from the database that no longer exist in Firebase
     missing_images = stored_images - firebase_images
@@ -107,26 +143,31 @@ def sync_database_with_firebase():
     conn.close()
 
 def insert_new_images_from_firebase():
-    """Insert new images from Firebase Storage into the database."""
+    """Insert new images from Firebase Storage into the database with AI species recognition."""
     conn = sqlite3.connect("birds.db")
     cursor = conn.cursor()
 
     blobs = bucket.list_blobs()
-    firebase_images = {firebase_base_url + blob.name for blob in blobs if blob.name.lower().endswith(('.jpg', '.jpeg', '.png'))}
+    firebase_images = {get_firebase_image_url(blob.name) for blob in blobs if blob.name.lower().endswith(('.jpg', '.jpeg', '.png'))}
 
     for image_url in firebase_images:
         cursor.execute("SELECT 1 FROM bird_photos WHERE image_filename = ?", (image_url,))
         exists = cursor.fetchone()
 
         if not exists:
-            # 🆕 Extract metadata and insert into the database
+            # 🆕 Extract metadata
             image_data = extract_metadata(image_url)
 
+            # 🧠 Get AI species suggestions
+            species_suggestions = get_species_suggestions(image_url)
+
+            # ✅ Insert into the database
             cursor.execute("""
-                INSERT INTO bird_photos (image_filename, date_taken, location, latitude, longitude)
-                VALUES (?, ?, ?, ?, ?)
-            """, (image_url, image_data['date_taken'], image_data['location'], image_data['latitude'], image_data['longitude']))
-            print(f"✅ Inserted {image_url} into the database.")
+                INSERT INTO bird_photos (image_filename, date_taken, location, latitude, longitude, species_suggestions)
+                VALUES (?, ?, ?, ?, ?, ?)
+            """, (image_url, image_data['date_taken'], image_data['location'], image_data['latitude'], image_data['longitude'], species_suggestions))
+
+            print(f"✅ Inserted {image_url} into the database with AI species suggestions: {species_suggestions}")
 
     conn.commit()
     conn.close()

@@ -28,7 +28,7 @@
         let allPhotos = [];
 
         function fetchPhotos() {
-            fetch("http://localhost:3000/api/photos")  // ✅ Using the formatted date API
+            fetch("/api/photos")  // ✅ Using the formatted date API
                 .then(response => response.json())
                 .then(photos => {
                     allPhotos = photos;
@@ -99,7 +99,7 @@
                 // ✅ Updated HTML structure with Date + Location at the top-left
                 photoCard.innerHTML = `
             <div class="photo-info">${dateLocation}</div>  <!-- ✅ New Date & Location -->
-            <img src="http://localhost:3000${photo.image_filename}" alt="Bird Photo">
+            <img src="${photo.image_filename}" alt="Bird Photo">
             ${speciesText}
         `;
 
