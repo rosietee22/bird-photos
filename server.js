@@ -33,21 +33,6 @@ const db = new sqlite3.Database(dbPath, (err) => {
     }
 });
 
-// ✅ Pull latest frontend files from GitHub
-function updateFrontend() {
-    console.log("📥 Pulling latest frontend files from GitHub...");
-    exec(`git pull origin main`, { cwd: FRONTEND_DIR }, (error, stdout, stderr) => {
-        if (error) {
-            console.error("❌ Error pulling frontend:", error.message);
-            return;
-        }
-        if (stderr) console.error("⚠️ Git stderr:", stderr);
-        console.log("✅ Frontend updated from GitHub:\n", stdout);
-    });
-}
-
-// ✅ Run updateFrontend on server start
-updateFrontend();
 
 // ✅ Serve static files from the public folder
 app.use(express.static(FRONTEND_DIR));
