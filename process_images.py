@@ -26,7 +26,7 @@ def get_firebase_image_url(blob_name):
     return f"https://firebasestorage.googleapis.com/v0/b/{bucket_name}/o/{blob_name}?alt=media"
 
 # ✅ Firebase bucket settings
-bucket_name = "bird-pictures-953b0.appspot.com"  # Corrected bucket name
+bucket_name = "bird-pictures-953b0.firebasestorage.app"  # Corrected bucket name
 bucket = storage_client.bucket(bucket_name)
 
 ssl._create_default_https_context = ssl._create_unverified_context
