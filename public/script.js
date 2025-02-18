@@ -21,6 +21,42 @@ function populateSpeciesFilter(photos) {
     });
 }
 
+function displayPhotos(photos) {
+    const gallery = document.getElementById("photo-gallery");
+    gallery.innerHTML = "";
+
+    photos.forEach(photo => {
+        const photoCard = document.createElement("div");
+        photoCard.className = "photo-card";
+
+        let formattedDate = "Unknown date";
+        if (photo.date_taken) {
+            const dateObj = new Date(photo.date_taken);
+            formattedDate = dateObj.toLocaleDateString("en-GB", {
+                day: "2-digit",
+                month: "long",
+                year: "numeric",
+            });
+        }
+
+        let formattedLocation = photo.location && photo.location.toLowerCase() !== "unknown" ? `, ${photo.location}` : "";
+        const dateLocation = `${formattedDate}${formattedLocation}`;
+
+        let speciesText = photo.species_names !== "Unknown"
+            ? `<p><strong>Species:</strong> ${photo.species_names}</p>`
+            : "<p><strong>Species:</strong> Unknown</p>";
+
+        photoCard.innerHTML = `
+            <div class="photo-info">${dateLocation}</div>
+            <img src="${photo.image_filename}" alt="Bird Photo">
+            ${speciesText}
+        `;
+
+        gallery.appendChild(photoCard);
+    });
+}
+
+
 function fetchPhotos() {
     fetch(`${API_BASE_URL}/api/photos`)
         .then(response => response.json())
