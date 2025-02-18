@@ -7,19 +7,32 @@ const fs = require('fs');
 const { exec } = require('child_process');
 const { format } = require('date-fns');
 
-// Download the database from GitHub if it doesn't exist
+const dbPath = '/persistent/birds.db';  // ✅ Moved dbPath to the top
+
+// ✅ Ensure database exists before connecting to it
 if (!fs.existsSync(dbPath)) {
     console.log("📥 Downloading birds.db from GitHub...");
     exec(`curl -o ${dbPath} https://raw.githubusercontent.com/YOUR_GITHUB_USER/YOUR_REPO/main/birds.db`, (error) => {
-        if (error) console.error("❌ Error downloading database:", error);
+        if (error) {
+            console.error("❌ Error downloading database:", error);
+        } else {
+            console.log("✅ Database downloaded successfully.");
+        }
     });
+} else {
+    console.log("✅ Database file exists at", dbPath);
 }
 
 const app = express();
-const db = new sqlite3.Database(dbPath);
-const IMAGES_FOLDER = path.join(__dirname, 'public/images');
-const dbPath = '/persistent/birds.db';
+const db = new sqlite3.Database(dbPath, (err) => {
+    if (err) {
+        console.error("❌ Could not connect to database:", err.message);
+    } else {
+        console.log("✅ Connected to SQLite database.");
+    }
+});
 
+const IMAGES_FOLDER = path.join(__dirname, 'public/images');
 
 app.use(cors());
 app.use(express.json());
@@ -63,8 +76,6 @@ async function preloadSpecies() {
 
 preloadSpecies();
 
-
-
 app.get('/api/photos', (req, res) => {
     const query = `
         SELECT bird_photos.id, bird_photos.image_filename, bird_photos.date_taken, bird_photos.location, 
@@ -96,10 +107,6 @@ app.get('/api/photos', (req, res) => {
     });
 });
 
-
-
-
-// **Species Suggestions (Instant Search)**
 app.get('/api/species-suggestions', async (req, res) => {
     const { query } = req.query;
     if (!query || query.length < 2) {
@@ -119,115 +126,7 @@ app.get('/api/species-suggestions', async (req, res) => {
     res.json(speciesList);
 });
 
-// **Update Location**
-app.post('/api/update-location', (req, res) => {
-    const { photo_id, location } = req.body;
-    if (!photo_id || !location) {
-        return res.status(400).json({ error: "Missing required fields" });
-    }
-
-    db.run("UPDATE bird_photos SET location = ? WHERE id = ?",
-        [location, photo_id], (err) => {
-            if (err) {
-                console.error("❌ Update Error:", err);
-                return res.status(500).json({ error: "Failed to update location" });
-            }
-            res.json({ message: "✅ Location updated successfully!" });
-        });
-});
-
-// **Update Species**
-app.post('/api/update-species', async (req, res) => {
-    const { photo_id, common_name } = req.body;
-
-    if (!photo_id || !common_name) {
-        return res.status(400).json({ error: "Missing required fields" });
-    }
-
-    db.get("SELECT id FROM bird_species WHERE common_name = ?", [common_name], (err, speciesRow) => {
-        if (err) {
-            console.error("❌ Database Error:", err);
-            return res.status(500).json({ error: "Database error" });
-        }
-
-        if (speciesRow) {
-            // ✅ If species exists, link it to the photo
-            db.run("INSERT OR IGNORE INTO bird_photo_species (photo_id, species_id) VALUES (?, ?)",
-                [photo_id, speciesRow.id], (err) => {
-                    if (err) {
-                        console.error("❌ Insert Error:", err);
-                        return res.status(500).json({ error: "Failed to associate species" });
-                    }
-                    res.json({ message: "✅ Species added successfully!" });
-                });
-        } else {
-            // ✅ If species doesn't exist, insert it first
-            db.run("INSERT INTO bird_species (common_name) VALUES (?)", [common_name], function (err) {
-                if (err) {
-                    console.error("❌ Insert Error:", err);
-                    return res.status(500).json({ error: "Failed to add species" });
-                }
-
-                const newSpeciesId = this.lastID;
-                db.run("INSERT INTO bird_photo_species (photo_id, species_id) VALUES (?, ?)",
-                    [photo_id, newSpeciesId], (err) => {
-                        if (err) {
-                            console.error("❌ Insert Error:", err);
-                            return res.status(500).json({ error: "Failed to associate new species" });
-                        }
-                        res.json({ message: `✅ New species '${common_name}' added and linked successfully!` });
-                    });
-            });
-        }
-    });
-});
-
-
-app.post('/api/remove-species', (req, res) => {
-    const { photo_id, common_name } = req.body;
-
-    if (!photo_id || !common_name) {
-        return res.status(400).json({ error: "Missing required fields" });
-    }
-
-    db.get("SELECT id FROM bird_species WHERE common_name = ?", [common_name], (err, speciesRow) => {
-        if (err) {
-            console.error("❌ Database Error:", err);
-            return res.status(500).json({ error: "Database error" });
-        }
-
-        if (!speciesRow) {
-            return res.status(400).json({ error: "Species not found" });
-        }
-
-        db.run("DELETE FROM bird_photo_species WHERE photo_id = ? AND species_id = ?",
-            [photo_id, speciesRow.id], (err) => {
-                if (err) {
-                    console.error("❌ Delete Error:", err);
-                    return res.status(500).json({ error: "Failed to remove species" });
-                }
-                res.json({ message: "✅ Species removed successfully!" });
-            });
-    });
-});
-
-app.get('/api/species-suggestions-ai', (req, res) => {
-    const query = `
-        SELECT id, image_filename, species_suggestions 
-        FROM bird_photos
-        WHERE species_suggestions IS NOT NULL
-    `;
-
-    db.all(query, [], (err, rows) => {
-        if (err) {
-            console.error("❌ Database Error:", err);
-            return res.status(500).json({ error: "Error fetching AI species suggestions" });
-        }
-
-        res.json(rows);
-    });
-});
-
+// **Check Database Tables**
 db.all("SELECT name FROM sqlite_master WHERE type='table';", [], (err, rows) => {
     if (err) {
         console.error("❌ Database error:", err);
@@ -235,7 +134,6 @@ db.all("SELECT name FROM sqlite_master WHERE type='table';", [], (err, rows) => 
         console.log("✅ Tables in database:", rows);
     }
 });
-
 
 // **Start Server**
 const PORT = 3000;
