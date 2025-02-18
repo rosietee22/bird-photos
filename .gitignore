@@ -9,3 +9,4 @@ node_modules/
 birds.db
 bird-pictures-953b0.json
 *.json
+venv/
