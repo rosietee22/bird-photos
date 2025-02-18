@@ -7,10 +7,6 @@ const fs = require('fs');
 const { exec } = require('child_process');
 const { format } = require('date-fns');
 
-const app = express();
-const db = new sqlite3.Database(dbPath);
-const IMAGES_FOLDER = path.join(__dirname, 'public/images');
-
 // Download the database from GitHub if it doesn't exist
 if (!fs.existsSync(dbPath)) {
     console.log("📥 Downloading birds.db from GitHub...");
@@ -19,7 +15,11 @@ if (!fs.existsSync(dbPath)) {
     });
 }
 
+const app = express();
+const db = new sqlite3.Database(dbPath);
+const IMAGES_FOLDER = path.join(__dirname, 'public/images');
 const dbPath = '/persistent/birds.db';
+
 
 app.use(cors());
 app.use(express.json());
