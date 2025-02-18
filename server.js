@@ -37,10 +37,20 @@ const db = new sqlite3.Database(dbPath, (err) => {
 // ✅ Serve static files from the public folder
 app.use(express.static(FRONTEND_DIR));
 
-// ✅ Handle unknown routes by serving index.html
-app.get('*', (req, res) => {
-    res.sendFile(path.join(FRONTEND_DIR, 'index.html'));
+// ✅ Serve API routes first, and only serve index.html for non-API requests
+app.use('/api', (req, res, next) => {
+    next(); // Allow API routes to be handled first
 });
+
+app.use(express.static(FRONTEND_DIR));
+
+// ✅ Serve index.html for any non-API request (Frontend Routing)
+app.get('*', (req, res) => {
+    if (!req.path.startsWith('/api')) {
+        res.sendFile(path.join(FRONTEND_DIR, 'index.html'));
+    }
+});
+
 
 const IMAGES_FOLDER = path.join(__dirname, 'public/images');
 
