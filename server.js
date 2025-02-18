@@ -32,6 +32,16 @@ const db = new sqlite3.Database(dbPath, (err) => {
     }
 });
 
+// ✅ Step 1: Check which tables exist in the database
+db.all("SELECT name FROM sqlite_master WHERE type='table';", [], (err, rows) => {
+    if (err) {
+        console.error("❌ Database error:", err);
+    } else {
+        console.log("✅ Tables in database:", rows);
+    }
+});
+
+
 const IMAGES_FOLDER = path.join(__dirname, 'public/images');
 
 app.use(cors());
@@ -139,14 +149,6 @@ app.get('/api/species-suggestions', async (req, res) => {
     res.json(speciesList);
 });
 
-// **Check Database Tables**
-db.all("SELECT name FROM sqlite_master WHERE type='table';", [], (err, rows) => {
-    if (err) {
-        console.error("❌ Database error:", err);
-    } else {
-        console.log("✅ Tables in database:", rows);
-    }
-});
 
 // **Start Server**
 const PORT = 3000;
