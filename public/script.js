@@ -1,4 +1,4 @@
-const API_BASE_URL = "https://bird-photos.onrender.com"; // ✅ Update this to your Render URL
+const API_BASE_URL = "https://birdpics.pics"; 
 
 document.addEventListener("DOMContentLoaded", fetchPhotos);
 
