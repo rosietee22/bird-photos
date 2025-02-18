@@ -2,6 +2,25 @@ const API_BASE_URL = "https://birdpics.pics";
 
 document.addEventListener("DOMContentLoaded", fetchPhotos);
 
+function populateSpeciesFilter(photos) {
+    const filterDropdown = document.getElementById("species-filter");
+    filterDropdown.innerHTML = `<option value="all">All Species</option>`;
+
+    const uniqueSpecies = new Set();
+    photos.forEach(photo => {
+        if (photo.species_names) {
+            photo.species_names.split(", ").forEach(species => uniqueSpecies.add(species));
+        }
+    });
+
+    uniqueSpecies.forEach(species => {
+        const option = document.createElement("option");
+        option.value = species;
+        option.textContent = species;
+        filterDropdown.appendChild(option);
+    });
+}
+
 function fetchPhotos() {
     fetch(`${API_BASE_URL}/api/photos`)
         .then(response => response.json())
@@ -41,6 +60,9 @@ function fetchSpeciesSuggestions(photoId) {
         })
         .catch(error => console.error("❌ Error fetching species suggestions:", error));
 }
+
+
+
 
 function updateSpecies(photoId) {
     const inputField = document.getElementById(`species-${photoId}`);
