@@ -44,13 +44,6 @@ app.use('/api', (req, res, next) => {
 
 app.use(express.static(FRONTEND_DIR));
 
-// ✅ Serve index.html for any non-API request (Frontend Routing)
-app.get('*', (req, res) => {
-    if (!req.path.startsWith('/api')) {
-        res.sendFile(path.join(FRONTEND_DIR, 'index.html'));
-    }
-});
-
 
 const IMAGES_FOLDER = path.join(__dirname, 'public/images');
 
@@ -181,6 +174,13 @@ app.get('/api/species-suggestions', async (req, res) => {
 
     speciesCache[lowerQuery] = speciesList;
     res.json(speciesList);
+});
+
+// ✅ Serve index.html for any non-API request (Frontend Routing)
+app.get('*', (req, res) => {
+    if (!req.path.startsWith('/api')) {
+        res.sendFile(path.join(FRONTEND_DIR, 'index.html'));
+    }
 });
 
 const PORT = process.env.PORT || 3000;
