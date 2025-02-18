@@ -7,7 +7,7 @@ const fs = require('fs');
 const { exec } = require('child_process');
 const { format } = require('date-fns');
 
-const dbPath = '/persistent/birds.db';  // ✅ Moved dbPath to the top
+const dbPath = '/persistent/birds.db';  // ✅ Ensure dbPath is set before use
 
 // ✅ Ensure database exists before connecting to it
 if (!fs.existsSync(dbPath)) {
@@ -41,19 +41,31 @@ app.use('/images', express.static(IMAGES_FOLDER));
 const speciesCache = {};
 let allSpecies = [];
 
-console.log("📸 Syncing images one time on server start...");
-exec("python3 process_images.py", (error, stdout, stderr) => {
-    if (error) {
-        console.error(`❌ Error running process_images.py: ${error.message}`);
-        return;
-    }
-    if (stderr) {
-        console.error(`⚠️ Python script stderr: ${stderr}`);
-    }
-    console.log(`✅ Python script output:\n${stdout}`);
+// ✅ Run process_images.py on Firebase images after database is ready
+db.serialize(() => {
+    db.all("SELECT name FROM sqlite_master WHERE type='table';", [], (err, rows) => {
+        if (err) {
+            console.error("❌ Database error:", err);
+        } else {
+            console.log("✅ Tables in database:", rows);
+            
+            // ✅ Only run the script after confirming the database is ready
+            console.log("📸 Processing images from Firebase...");
+            exec("python3 process_images.py --firebase", (error, stdout, stderr) => {
+                if (error) {
+                    console.error(`❌ Error running process_images.py: ${error.message}`);
+                    return;
+                }
+                if (stderr) {
+                    console.error(`⚠️ Python script stderr: ${stderr}`);
+                }
+                console.log(`✅ Python script output:\n${stdout}`);
+            });
+        }
+    });
 });
 
-// **Preload eBird Species List (Cached)**
+// ✅ Keeps species suggestion functionality
 async function preloadSpecies() {
     const cacheFile = './species_cache.json';
 
@@ -107,6 +119,7 @@ app.get('/api/photos', (req, res) => {
     });
 });
 
+// ✅ Keeps `/api/species-suggestions` as requested
 app.get('/api/species-suggestions', async (req, res) => {
     const { query } = req.query;
     if (!query || query.length < 2) {
