@@ -106,6 +106,13 @@ async function preloadSpecies() {
 preloadSpecies();
 
 app.get('/api/photos', (req, res) => {
+    console.log("🔍 Received request for /api/photos");
+
+    if (!db) {
+        console.error("❌ Database connection is not established.");
+        return res.status(500).json({ error: "Database connection failed" });
+    }
+
     const query = `
         SELECT bird_photos.id, bird_photos.image_filename, bird_photos.date_taken, bird_photos.location, 
                bird_photos.latitude, bird_photos.longitude,
@@ -115,6 +122,7 @@ app.get('/api/photos', (req, res) => {
         LEFT JOIN bird_species ON bird_photo_species.species_id = bird_species.id
         GROUP BY bird_photos.id
         ORDER BY RANDOM()
+        LIMIT 50
     `;
 
     db.all(query, [], (err, rows) => {
@@ -123,16 +131,38 @@ app.get('/api/photos', (req, res) => {
             return res.status(500).json({ error: "Error fetching photos" });
         }
 
+        if (!rows || rows.length === 0) {
+            console.warn("⚠️ No photos found in the database.");
+            return res.json([]);
+        }
+
+        console.log(`✅ Fetched ${rows.length} photos from database.`);
+
+        // Format data properly
         rows.forEach(row => {
             if (row.date_taken) {
-                row.date_taken = format(new Date(row.date_taken), "d MMMM yyyy");
+                try {
+                    row.date_taken = format(new Date(row.date_taken), "d MMMM yyyy");
+                } catch (error) {
+                    console.warn(`⚠️ Invalid date format for ${row.image_filename}:`, row.date_taken);
+                    row.date_taken = "Unknown date";
+                }
+            } else {
+                row.date_taken = "Unknown date";
             }
-            row.image_filename = `https://firebasestorage.googleapis.com/v0/b/bird-pictures-953b0.firebasestorage.app/o/${encodeURIComponent(row.image_filename)}?alt=media`;
+
+            // Prevent double URL encoding issues
+            if (row.image_filename && row.image_filename.startsWith("http")) {
+                row.image_filename = row.image_filename;
+            } else {
+                row.image_filename = `https://firebasestorage.googleapis.com/v0/b/bird-pictures-953b0.firebasestorage.app/o/${encodeURIComponent(row.image_filename)}?alt=media`;
+            }
         });
 
         res.json(rows);
     });
 });
+
 
 app.get('/api/species-suggestions', async (req, res) => {
     const { query } = req.query;
