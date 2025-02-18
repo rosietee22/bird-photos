@@ -8,6 +8,7 @@ const { exec } = require('child_process');
 const { format } = require('date-fns');
 
 const dbPath = '/persistent/birds.db';  // ✅ Ensure dbPath is set before use
+const FRONTEND_DIR = path.join(__dirname, 'public'); // ✅ Directory for frontend files
 
 // ✅ Ensure database exists before connecting to it
 if (!fs.existsSync(dbPath)) {
@@ -32,15 +33,29 @@ const db = new sqlite3.Database(dbPath, (err) => {
     }
 });
 
-// ✅ Step 1: Check which tables exist in the database
-db.all("SELECT name FROM sqlite_master WHERE type='table';", [], (err, rows) => {
-    if (err) {
-        console.error("❌ Database error:", err);
-    } else {
-        console.log("✅ Tables in database:", rows);
-    }
-});
+// ✅ Pull latest frontend files from GitHub
+function updateFrontend() {
+    console.log("📥 Pulling latest frontend files from GitHub...");
+    exec(`git pull origin main`, { cwd: FRONTEND_DIR }, (error, stdout, stderr) => {
+        if (error) {
+            console.error("❌ Error pulling frontend:", error.message);
+            return;
+        }
+        if (stderr) console.error("⚠️ Git stderr:", stderr);
+        console.log("✅ Frontend updated from GitHub:\n", stdout);
+    });
+}
 
+// ✅ Run updateFrontend on server start
+updateFrontend();
+
+// ✅ Serve static files from the public folder
+app.use(express.static(FRONTEND_DIR));
+
+// ✅ Handle unknown routes by serving index.html
+app.get('*', (req, res) => {
+    res.sendFile(path.join(FRONTEND_DIR, 'index.html'));
+});
 
 const IMAGES_FOLDER = path.join(__dirname, 'public/images');
 
@@ -58,8 +73,6 @@ db.serialize(() => {
             console.error("❌ Database error:", err);
         } else {
             console.log("✅ Tables in database:", rows);
-            
-            // ✅ Only run the script after confirming the database is ready
             console.log("📸 Processing images from Firebase...");
             exec("python3 process_images.py --firebase", (error, stdout, stderr) => {
                 if (error) {
@@ -75,7 +88,6 @@ db.serialize(() => {
     });
 });
 
-// ✅ Keeps species suggestion functionality
 async function preloadSpecies() {
     const cacheFile = './species_cache.json';
 
@@ -120,8 +132,6 @@ app.get('/api/photos', (req, res) => {
             if (row.date_taken) {
                 row.date_taken = format(new Date(row.date_taken), "d MMMM yyyy");
             }
-
-            // 🔹 Convert filename to Firebase Storage URL with token
             row.image_filename = `https://firebasestorage.googleapis.com/v0/b/bird-pictures-953b0.firebasestorage.app/o/${encodeURIComponent(row.image_filename)}?alt=media`;
         });
 
@@ -129,7 +139,6 @@ app.get('/api/photos', (req, res) => {
     });
 });
 
-// ✅ Keeps `/api/species-suggestions` as requested
 app.get('/api/species-suggestions', async (req, res) => {
     const { query } = req.query;
     if (!query || query.length < 2) {
@@ -149,10 +158,7 @@ app.get('/api/species-suggestions', async (req, res) => {
     res.json(speciesList);
 });
 
-
-// **Start Server**
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
-    console.log(`🚀 Server running on port ${PORT}`);
+    console.log(`🚀 Server running at https://birdpics.pics/`);
 });
-
