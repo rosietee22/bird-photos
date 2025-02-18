@@ -20,7 +20,6 @@ if (!fs.existsSync(dbPath)) {
 }
 
 const dbPath = '/persistent/birds.db';
-const { exec } = require('child_process');
 
 app.use(cors());
 app.use(express.json());
