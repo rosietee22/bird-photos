@@ -25,9 +25,12 @@ function displayPhotos(photos) {
     const gallery = document.getElementById("photo-gallery");
     gallery.innerHTML = "";
 
+    const isAdminPage = window.location.pathname.includes("admin.html"); // Detect admin mode
+
     photos.forEach(photo => {
         const photoCard = document.createElement("div");
         photoCard.className = "photo-card";
+        photoCard.id = `bird-card-${photo.id}`;
 
         let formattedDate = "Unknown date";
         if (photo.date_taken) {
@@ -46,15 +49,44 @@ function displayPhotos(photos) {
             ? `<p><strong>Species:</strong> ${photo.species_names}</p>`
             : "<p><strong>Species:</strong> Unknown</p>";
 
-        photoCard.innerHTML = `
+        // 🟢 **Default Home Page Display**
+        let cardContent = `
             <div class="photo-info">${dateLocation}</div>
             <img src="${photo.image_filename}" alt="Bird Photo">
             ${speciesText}
         `;
 
+        // 🔴 **Admin Panel Features (Edit, Delete)**
+        if (isAdminPage) {
+            cardContent += `
+                <div id="species-container-${photo.id}">
+                    <strong>Species:</strong> 
+                    ${photo.species_names.split(", ").map(species => `
+                        <span class="species-tag">
+                            ${species} <span class="remove-species" onclick="removeSpecies(${photo.id}, '${species}')">✖</span>
+                        </span>
+                    `).join(" ")}
+                </div>
+
+                <input type="text" id="species-${photo.id}" placeholder="Add or Edit Species" onkeyup="fetchSpeciesSuggestions(${photo.id})">
+                <div id="species-dropdown-${photo.id}" class="species-dropdown"></div>
+                <button onclick="updateSpecies(${photo.id})">Update Species</button>
+
+                <p class="location-text"><strong>Location:</strong> ${photo.location || "Unknown"} 
+                    <button onclick="editLocation(${photo.id})">Edit</button>
+                </p>
+                <input type="text" id="location-${photo.id}" placeholder="Edit Location">
+                <button onclick="updateLocation(${photo.id})">Update Location</button>
+
+                <button onclick="deletePhoto(${photo.id})" class="delete-btn">Delete Photo</button>
+            `;
+        }
+
+        photoCard.innerHTML = cardContent;
         gallery.appendChild(photoCard);
     });
 }
+
 
 
 function fetchPhotos() {
