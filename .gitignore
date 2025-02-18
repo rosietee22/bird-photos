@@ -1,5 +1,4 @@
-# Ignore database & cache files
-birds.db
+# Ignore cache files
 species_cache.json
 
 # Ignore images (keep them local)

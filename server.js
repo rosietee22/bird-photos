@@ -8,8 +8,19 @@ const { exec } = require('child_process');
 const { format } = require('date-fns');
 
 const app = express();
-const db = new sqlite3.Database('/persistent/birds.db');
+const db = new sqlite3.Database(dbPath);
 const IMAGES_FOLDER = path.join(__dirname, 'public/images');
+
+// Download the database from GitHub if it doesn't exist
+if (!fs.existsSync(dbPath)) {
+    console.log("📥 Downloading birds.db from GitHub...");
+    exec(`curl -o ${dbPath} https://raw.githubusercontent.com/YOUR_GITHUB_USER/YOUR_REPO/main/birds.db`, (error) => {
+        if (error) console.error("❌ Error downloading database:", error);
+    });
+}
+
+const dbPath = '/persistent/birds.db';
+const { exec } = require('child_process');
 
 app.use(cors());
 app.use(express.json());
@@ -116,7 +127,7 @@ app.post('/api/update-location', (req, res) => {
         return res.status(400).json({ error: "Missing required fields" });
     }
 
-    db.run("UPDATE bird_photos SET location = ? WHERE id = ?", 
+    db.run("UPDATE bird_photos SET location = ? WHERE id = ?",
         [location, photo_id], (err) => {
             if (err) {
                 console.error("❌ Update Error:", err);
@@ -142,14 +153,14 @@ app.post('/api/update-species', async (req, res) => {
 
         if (speciesRow) {
             // ✅ If species exists, link it to the photo
-            db.run("INSERT OR IGNORE INTO bird_photo_species (photo_id, species_id) VALUES (?, ?)", 
-                   [photo_id, speciesRow.id], (err) => {
-                if (err) {
-                    console.error("❌ Insert Error:", err);
-                    return res.status(500).json({ error: "Failed to associate species" });
-                }
-                res.json({ message: "✅ Species added successfully!" });
-            });
+            db.run("INSERT OR IGNORE INTO bird_photo_species (photo_id, species_id) VALUES (?, ?)",
+                [photo_id, speciesRow.id], (err) => {
+                    if (err) {
+                        console.error("❌ Insert Error:", err);
+                        return res.status(500).json({ error: "Failed to associate species" });
+                    }
+                    res.json({ message: "✅ Species added successfully!" });
+                });
         } else {
             // ✅ If species doesn't exist, insert it first
             db.run("INSERT INTO bird_species (common_name) VALUES (?)", [common_name], function (err) {
@@ -159,14 +170,14 @@ app.post('/api/update-species', async (req, res) => {
                 }
 
                 const newSpeciesId = this.lastID;
-                db.run("INSERT INTO bird_photo_species (photo_id, species_id) VALUES (?, ?)", 
-                       [photo_id, newSpeciesId], (err) => {
-                    if (err) {
-                        console.error("❌ Insert Error:", err);
-                        return res.status(500).json({ error: "Failed to associate new species" });
-                    }
-                    res.json({ message: `✅ New species '${common_name}' added and linked successfully!` });
-                });
+                db.run("INSERT INTO bird_photo_species (photo_id, species_id) VALUES (?, ?)",
+                    [photo_id, newSpeciesId], (err) => {
+                        if (err) {
+                            console.error("❌ Insert Error:", err);
+                            return res.status(500).json({ error: "Failed to associate new species" });
+                        }
+                        res.json({ message: `✅ New species '${common_name}' added and linked successfully!` });
+                    });
             });
         }
     });
@@ -190,14 +201,14 @@ app.post('/api/remove-species', (req, res) => {
             return res.status(400).json({ error: "Species not found" });
         }
 
-        db.run("DELETE FROM bird_photo_species WHERE photo_id = ? AND species_id = ?", 
+        db.run("DELETE FROM bird_photo_species WHERE photo_id = ? AND species_id = ?",
             [photo_id, speciesRow.id], (err) => {
-            if (err) {
-                console.error("❌ Delete Error:", err);
-                return res.status(500).json({ error: "Failed to remove species" });
-            }
-            res.json({ message: "✅ Species removed successfully!" });
-        });
+                if (err) {
+                    console.error("❌ Delete Error:", err);
+                    return res.status(500).json({ error: "Failed to remove species" });
+                }
+                res.json({ message: "✅ Species removed successfully!" });
+            });
     });
 });
 
@@ -216,6 +227,14 @@ app.get('/api/species-suggestions-ai', (req, res) => {
 
         res.json(rows);
     });
+});
+
+db.all("SELECT name FROM sqlite_master WHERE type='table';", [], (err, rows) => {
+    if (err) {
+        console.error("❌ Database error:", err);
+    } else {
+        console.log("✅ Tables in database:", rows);
+    }
 });
 
 
