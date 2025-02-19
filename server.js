@@ -246,6 +246,19 @@ function linkSpeciesToPhoto(photo_id, species_id, res) {
     });
 }
 
+function filterPhotos() {
+    const selectedSpecies = document.getElementById("species-filter").value;
+
+    if (selectedSpecies === "all") {
+        displayPhotos(allPhotos); // Show all photos if "All Species" is selected
+    } else {
+        const filteredPhotos = allPhotos.filter(photo =>
+            photo.species_names && photo.species_names.includes(selectedSpecies)
+        );
+        displayPhotos(filteredPhotos); // Show only matching species
+    }
+}
+
 
 
 app.post('/api/update-location', (req, res) => {

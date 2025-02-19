@@ -42,8 +42,8 @@ function displayPhotos(photos) {
             });
         }
 
-        let formattedLocation = photo.location && photo.location.toLowerCase() !== "unknown" ? `, ${photo.location}` : "";
-        const dateLocation = `${formattedDate}${formattedLocation}`;
+        let formattedLocation = photo.location && photo.location.toLowerCase() !== "unknown" ? photo.location : "Unknown";
+        const dateLocation = `${formattedDate}, ${formattedLocation}`;
 
         let speciesList = photo.species_names && photo.species_names !== "Unknown"
             ? photo.species_names.split(", ")
@@ -73,11 +73,14 @@ function displayPhotos(photos) {
                     <button onclick="updateSpecies(${photo.id})">Add Species</button>
                 </div>
 
-                <p class="location-text"><strong>Location:</strong> ${photo.location || "Unknown"} 
-                    <button onclick="editLocation(${photo.id})">Edit</button>
-                </p>
-                <input type="text" id="location-${photo.id}" placeholder="Edit Location">
-                <button onclick="updateLocation(${photo.id})">Update Location</button>
+                <div id="location-container-${photo.id}">
+                    <p id="location-text-${photo.id}" class="location-text">
+                        <strong>Location:</strong> ${formattedLocation} 
+                        <button onclick="editLocation(${photo.id})">Edit</button>
+                    </p>
+                    <input type="text" id="location-input-${photo.id}" placeholder="Edit Location" style="display:none;">
+                    <button id="update-location-${photo.id}" onclick="updateLocation(${photo.id})" style="display:none;">Update Location</button>
+                </div>
 
                 <button onclick="deletePhoto(${photo.id})" class="delete-btn">Delete Photo</button>
             `;
@@ -87,6 +90,7 @@ function displayPhotos(photos) {
         gallery.appendChild(photoCard);
     });
 }
+
 
 
 function fetchPhotos() {
@@ -99,6 +103,20 @@ function fetchPhotos() {
         })
         .catch(error => console.error("❌ Error fetching photos:", error)); // Improved error message
 }
+
+function filterPhotos() {
+    const selectedSpecies = document.getElementById("species-filter").value;
+
+    if (selectedSpecies === "all") {
+        displayPhotos(allPhotos); // Show all photos if "All Species" is selected
+    } else {
+        const filteredPhotos = allPhotos.filter(photo =>
+            photo.species_names && photo.species_names.includes(selectedSpecies)
+        );
+        displayPhotos(filteredPhotos); // Show only matching species
+    }
+}
+
 
 function fetchSpeciesSuggestions(photoId) {
     const inputField = document.getElementById(`species-${photoId}`);
@@ -184,36 +202,53 @@ function updateBirdCard(photoId) {
         .catch(error => console.error("❌ Error updating bird card:", error));
 }
 
-function updateLocation(photoId) {
-    const locationInput = document.getElementById(`location-${photoId}`);
-    const location = locationInput.value.trim();
+function editLocation(photoId) {
+    const currentLocation = document.getElementById(`location-text-${photoId}`);
+    const inputField = document.getElementById(`location-input-${photoId}`);
+    const updateButton = document.getElementById(`update-location-${photoId}`);
 
-    if (location) {
+    // Show input and update button, hide current location text
+    currentLocation.style.display = "none";
+    inputField.style.display = "inline-block";
+    updateButton.style.display = "inline-block";
+
+    // Pre-fill input with existing location
+    inputField.value = currentLocation.textContent.replace("Location:", "").trim();
+}
+
+function updateLocation(photoId) {
+    const inputField = document.getElementById(`location-input-${photoId}`);
+    const newLocation = inputField.value.trim();
+
+    if (newLocation) {
         fetch(`${API_BASE_URL}/api/update-location`, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ photo_id: photoId, location })
+            body: JSON.stringify({ photo_id: photoId, location: newLocation })
         })
-            .then(response => response.json())
-            .then(() => {
-                fetch(`${API_BASE_URL}/api/photos`)
-                    .then(response => response.json())
-                    .then(photos => {
-                        const photo = photos.find(p => p.id === photoId);
-                        if (!photo) return;
+        .then(response => response.json())
+        .then(() => {
+            fetch(`${API_BASE_URL}/api/photos`)
+                .then(response => response.json())
+                .then(photos => {
+                    const photo = photos.find(p => p.id === photoId);
+                    if (!photo) return;
 
-                        const card = document.getElementById(`bird-card-${photoId}`);
-                        if (card) {
-                            const locationContainer = card.querySelector("p.location-text");
-                            if (locationContainer) {
-                                locationContainer.innerHTML = `<strong>Location:</strong> ${photo.location} <button onclick="editLocation(${photo.id})">Edit</button>`;
-                            }
-                        }
-                    });
-            })
-            .catch(error => console.error("❌ Error updating location:", error));
+                    const currentLocation = document.getElementById(`location-text-${photoId}`);
+                    const inputField = document.getElementById(`location-input-${photoId}`);
+                    const updateButton = document.getElementById(`update-location-${photoId}`);
+
+                    // Update UI with new location
+                    currentLocation.innerHTML = `<strong>Location:</strong> ${photo.location}`;
+                    currentLocation.style.display = "inline";
+                    inputField.style.display = "none";
+                    updateButton.style.display = "none";
+                });
+        })
+        .catch(error => console.error("❌ Error updating location:", error));
     }
 }
+
 
 function confirmAISpecies(photoId, speciesName) {
     fetch(`${API_BASE_URL}/api/update-species`, {
