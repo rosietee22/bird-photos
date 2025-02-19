@@ -175,6 +175,73 @@ app.get('/api/species-suggestions', async (req, res) => {
     res.json(speciesList);
 });
 
+app.post('/api/update-species', (req, res) => {
+    const { photo_id, common_name } = req.body;
+
+    if (!photo_id || !common_name) {
+        return res.status(400).json({ error: "Missing photo_id or common_name" });
+    }
+
+    const query = `
+        INSERT INTO bird_photo_species (photo_id, species_id)
+        VALUES (?, (SELECT id FROM bird_species WHERE common_name = ?))
+        ON CONFLICT(photo_id, species_id) DO NOTHING
+    `;
+
+    db.run(query, [photo_id, common_name], function (err) {
+        if (err) {
+            console.error("❌ Error updating species:", err.message);
+            return res.status(500).json({ error: "Failed to update species" });
+        }
+        console.log(`✅ Species updated for photo ${photo_id}: ${common_name}`);
+        res.json({ message: "Species updated successfully", photo_id, common_name });
+    });
+});
+
+app.post('/api/update-location', (req, res) => {
+    const { photo_id, location } = req.body;
+
+    if (!photo_id || !location) {
+        return res.status(400).json({ error: "Missing photo_id or location" });
+    }
+
+    const query = `UPDATE bird_photos SET location = ? WHERE id = ?`;
+
+    db.run(query, [location, photo_id], function (err) {
+        if (err) {
+            console.error("❌ Error updating location:", err.message);
+            return res.status(500).json({ error: "Failed to update location" });
+        }
+        console.log(`✅ Location updated for photo ${photo_id}: ${location}`);
+        res.json({ message: "Location updated successfully", photo_id, location });
+    });
+});
+
+app.post('/api/remove-species', (req, res) => {
+    const { photo_id, common_name } = req.body;
+
+    if (!photo_id || !common_name) {
+        return res.status(400).json({ error: "Missing photo_id or common_name" });
+    }
+
+    const query = `
+        DELETE FROM bird_photo_species 
+        WHERE photo_id = ? 
+        AND species_id = (SELECT id FROM bird_species WHERE common_name = ?)
+    `;
+
+    db.run(query, [photo_id, common_name], function (err) {
+        if (err) {
+            console.error("❌ Error removing species:", err.message);
+            return res.status(500).json({ error: "Failed to remove species" });
+        }
+        console.log(`✅ Species removed from photo ${photo_id}: ${common_name}`);
+        res.json({ message: "Species removed successfully", photo_id, common_name });
+    });
+});
+
+
+
 // ✅ Serve index.html for any non-API request (Frontend Routing)
 app.get('*', (req, res) => {
     if (!req.path.startsWith('/api')) {
