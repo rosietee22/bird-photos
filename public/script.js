@@ -96,7 +96,7 @@ function fetchPhotos() {
             populateSpeciesFilter(photos);
             displayPhotos(photos);
         })
-        .catch(error => console.error("Error fetching photos:", error));
+        .catch(error => console.error("❌ Error fetching photos:", error)); // Improved error message
 }
 
 function fetchSpeciesSuggestions(photoId) {
@@ -128,9 +128,6 @@ function fetchSpeciesSuggestions(photoId) {
         .catch(error => console.error("❌ Error fetching species suggestions:", error));
 }
 
-
-
-
 function updateSpecies(photoId) {
     const inputField = document.getElementById(`species-${photoId}`);
     const speciesName = inputField.value.trim();
@@ -141,14 +138,26 @@ function updateSpecies(photoId) {
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ photo_id: photoId, common_name: speciesName })
         })
-            .then(response => response.json())
-            .then(data => {
-                console.log("Server Response:", data);
-                updateBirdCard(photoId);
-            })
-            .catch(error => console.error("❌ Error updating species:", error));
+        .then(response => response.json())
+        .then(data => {
+            console.log("✅ Species Updated:", data);
+
+            // 🔹 Immediately update UI
+            const speciesContainer = document.querySelector(`#species-container-${photoId}`);
+            if (speciesContainer) {
+                const newSpeciesTag = document.createElement("span");
+                newSpeciesTag.className = "species-tag";
+                newSpeciesTag.innerHTML = `${speciesName} <span class="remove-species" onclick="removeSpecies(${photoId}, '${speciesName}')">✖</span>`;
+                speciesContainer.appendChild(newSpeciesTag);
+            }
+
+            // 🔹 Clear input field after update
+            inputField.value = "";
+        })
+        .catch(error => console.error("❌ Error updating species:", error));
     }
 }
+
 
 function updateBirdCard(photoId) {
     fetch(`${API_BASE_URL}/api/photos`)
