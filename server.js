@@ -25,25 +25,24 @@ if (!fs.existsSync(dbPath)) {
 }
 
 const app = express();
+
+// Improved error handling for database connection
 const db = new sqlite3.Database(dbPath, (err) => {
     if (err) {
         console.error("❌ Could not connect to database:", err.message);
+        process.exit(1); // Exit process if database connection fails
     } else {
         console.log("✅ Connected to SQLite database.");
     }
 });
 
-
 // ✅ Serve static files from the public folder
 app.use(express.static(FRONTEND_DIR));
 
-// ✅ Serve API routes first, and only serve index.html for non-API requests
+// Remove redundant express.static(FRONTEND_DIR)
 app.use('/api', (req, res, next) => {
     next(); // Allow API routes to be handled first
 });
-
-app.use(express.static(FRONTEND_DIR));
-
 
 const IMAGES_FOLDER = path.join(__dirname, 'public/images');
 

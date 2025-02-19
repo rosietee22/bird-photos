@@ -1,4 +1,4 @@
-const API_BASE_URL = "https://birdpics.pics"; 
+const API_BASE_URL = "https://birdpics.pics";
 
 document.addEventListener("DOMContentLoaded", fetchPhotos);
 
@@ -25,7 +25,7 @@ function displayPhotos(photos) {
     const gallery = document.getElementById("photo-gallery");
     gallery.innerHTML = "";
 
-    const isAdminPage = window.location.pathname.includes("admin.html"); // Detect admin mode
+    const isAdminPage = window.location.pathname.includes("admin.html"); // Detect if in admin mode
 
     photos.forEach(photo => {
         const photoCard = document.createElement("div");
@@ -49,14 +49,14 @@ function displayPhotos(photos) {
             ? `<p><strong>Species:</strong> ${photo.species_names}</p>`
             : "<p><strong>Species:</strong> Unknown</p>";
 
-        // 🟢 **Default Home Page Display**
+        // 🟢 Default Home Page Display (No Editing)
         let cardContent = `
             <div class="photo-info">${dateLocation}</div>
             <img src="${photo.image_filename}" alt="Bird Photo">
             ${speciesText}
         `;
 
-        // 🔴 **Admin Panel Features (Edit, Delete)**
+        // 🔴 Add Admin Features (Edit, Delete) if on Admin Page
         if (isAdminPage) {
             cardContent += `
                 <div id="species-container-${photo.id}">
@@ -86,7 +86,6 @@ function displayPhotos(photos) {
         gallery.appendChild(photoCard);
     });
 }
-
 
 
 function fetchPhotos() {
@@ -142,12 +141,12 @@ function updateSpecies(photoId) {
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ photo_id: photoId, common_name: speciesName })
         })
-        .then(response => response.json())
-        .then(data => {
-            console.log("Server Response:", data);
-            updateBirdCard(photoId);
-        })
-        .catch(error => console.error("❌ Error updating species:", error));
+            .then(response => response.json())
+            .then(data => {
+                console.log("Server Response:", data);
+                updateBirdCard(photoId);
+            })
+            .catch(error => console.error("❌ Error updating species:", error));
     }
 }
 
@@ -185,24 +184,24 @@ function updateLocation(photoId) {
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ photo_id: photoId, location })
         })
-        .then(response => response.json())
-        .then(() => {
-            fetch(`${API_BASE_URL}/api/photos`)
-                .then(response => response.json())
-                .then(photos => {
-                    const photo = photos.find(p => p.id === photoId);
-                    if (!photo) return;
+            .then(response => response.json())
+            .then(() => {
+                fetch(`${API_BASE_URL}/api/photos`)
+                    .then(response => response.json())
+                    .then(photos => {
+                        const photo = photos.find(p => p.id === photoId);
+                        if (!photo) return;
 
-                    const card = document.getElementById(`bird-card-${photoId}`);
-                    if (card) {
-                        const locationContainer = card.querySelector("p.location-text");
-                        if (locationContainer) {
-                            locationContainer.innerHTML = `<strong>Location:</strong> ${photo.location} <button onclick="editLocation(${photo.id})">Edit</button>`;
+                        const card = document.getElementById(`bird-card-${photoId}`);
+                        if (card) {
+                            const locationContainer = card.querySelector("p.location-text");
+                            if (locationContainer) {
+                                locationContainer.innerHTML = `<strong>Location:</strong> ${photo.location} <button onclick="editLocation(${photo.id})">Edit</button>`;
+                            }
                         }
-                    }
-                });
-        })
-        .catch(error => console.error("❌ Error updating location:", error));
+                    });
+            })
+            .catch(error => console.error("❌ Error updating location:", error));
     }
 }
 
@@ -212,12 +211,12 @@ function confirmAISpecies(photoId, speciesName) {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ photo_id: photoId, common_name: speciesName })
     })
-    .then(response => response.json())
-    .then(data => {
-        console.log("Server Response:", data);
-        updateBirdCard(photoId);
-    })
-    .catch(error => console.error("❌ Error confirming AI species:", error));
+        .then(response => response.json())
+        .then(data => {
+            console.log("Server Response:", data);
+            updateBirdCard(photoId);
+        })
+        .catch(error => console.error("❌ Error confirming AI species:", error));
 }
 
 function removeSpecies(photoId, speciesName) {
@@ -228,10 +227,10 @@ function removeSpecies(photoId, speciesName) {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ photo_id: photoId, common_name: speciesName })
     })
-    .then(response => response.json())
-    .then(data => {
-        console.log("Server Response:", data);
-        updateBirdCard(photoId);
-    })
-    .catch(error => console.error("❌ Error removing species:", error));
+        .then(response => response.json())
+        .then(data => {
+            console.log("Server Response:", data);
+            updateBirdCard(photoId);
+        })
+        .catch(error => console.error("❌ Error removing species:", error));
 }

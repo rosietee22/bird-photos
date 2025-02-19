@@ -11,7 +11,6 @@ import ssl
 import json
 from google.oauth2 import service_account
 
-# ✅ Load Firebase credentials correctly
 firebase_credentials_json = os.getenv("GOOGLE_APPLICATION_CREDENTIALS_JSON")
 if firebase_credentials_json:
     credentials_dict = json.loads(firebase_credentials_json)
@@ -25,8 +24,7 @@ def get_firebase_image_url(blob_name):
     """Generate the correct Firebase Storage public URL"""
     return f"https://firebasestorage.googleapis.com/v0/b/{bucket_name}/o/{blob_name}?alt=media"
 
-# ✅ Firebase bucket settings
-bucket_name = "bird-pictures-953b0.firebasestorage.app"  # Corrected bucket name
+bucket_name = "bird-pictures-953b0.firebasestorage.app"
 bucket = storage_client.bucket(bucket_name)
 
 ssl._create_default_https_context = ssl._create_unverified_context
@@ -84,7 +82,6 @@ def extract_metadata(image_url):
         "location": city_name
     }
 
-# ✅ iNaturalist AI Image Recognition
 INATURALIST_API_URL = "https://api.inaturalist.org/v1/computervision/score_image"
 
 def get_species_suggestions(image_url):
@@ -104,7 +101,6 @@ def get_species_suggestions(image_url):
         print(f"❌ AI Error fetching species for {image_url}: {e}")
         return "Unknown"
 
-# ✅ Correct Database Path
 db_path = "/persistent/birds.db"
 
 def sync_database_with_firebase():
