@@ -45,9 +45,17 @@ function displayPhotos(photos) {
         let formattedLocation = photo.location && photo.location.toLowerCase() !== "unknown" ? `, ${photo.location}` : "";
         const dateLocation = `${formattedDate}${formattedLocation}`;
 
-        let speciesText = photo.species_names !== "Unknown"
-            ? `<p><strong>Species:</strong> ${photo.species_names}</p>`
-            : "<p><strong>Species:</strong> Unknown</p>";
+        let speciesList = photo.species_names && photo.species_names !== "Unknown"
+            ? photo.species_names.split(", ")
+            : ["Unknown"];
+
+        let speciesText = `<div id="species-container-${photo.id}"><strong>Species:</strong> ${
+            speciesList.map(species => `
+                <span class="species-tag">
+                    ${species} ${species !== "Unknown" ? `<span class="remove-species" onclick="removeSpecies(${photo.id}, '${species}')">✖</span>` : ""}
+                </span>
+            `).join(" ")}
+        </div>`;
 
         // 🟢 Default Home Page Display (No Editing)
         let cardContent = `
@@ -59,18 +67,11 @@ function displayPhotos(photos) {
         // 🔴 Add Admin Features (Edit, Delete) if on Admin Page
         if (isAdminPage) {
             cardContent += `
-                <div id="species-container-${photo.id}">
-                    <strong>Species:</strong> 
-                    ${photo.species_names.split(", ").map(species => `
-                        <span class="species-tag">
-                            ${species} <span class="remove-species" onclick="removeSpecies(${photo.id}, '${species}')">✖</span>
-                        </span>
-                    `).join(" ")}
+                <div class="species-edit">
+                    <input type="text" id="species-${photo.id}" placeholder="Add Species" onkeyup="fetchSpeciesSuggestions(${photo.id})">
+                    <div id="species-dropdown-${photo.id}" class="species-dropdown"></div>
+                    <button onclick="updateSpecies(${photo.id})">Add Species</button>
                 </div>
-
-                <input type="text" id="species-${photo.id}" placeholder="Add or Edit Species" onkeyup="fetchSpeciesSuggestions(${photo.id})">
-                <div id="species-dropdown-${photo.id}" class="species-dropdown"></div>
-                <button onclick="updateSpecies(${photo.id})">Update Species</button>
 
                 <p class="location-text"><strong>Location:</strong> ${photo.location || "Unknown"} 
                     <button onclick="editLocation(${photo.id})">Edit</button>

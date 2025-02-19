@@ -182,21 +182,71 @@ app.post('/api/update-species', (req, res) => {
         return res.status(400).json({ error: "Missing photo_id or common_name" });
     }
 
-    const query = `
-        INSERT INTO bird_photo_species (photo_id, species_id)
-        VALUES (?, (SELECT id FROM bird_species WHERE common_name = ?))
-        ON CONFLICT(photo_id, species_id) DO NOTHING
-    `;
+    // Step 1: Check if the species already exists in bird_species
+    const findSpeciesQuery = `SELECT id FROM bird_species WHERE common_name = ?`;
 
-    db.run(query, [photo_id, common_name], function (err) {
+    db.get(findSpeciesQuery, [common_name], (err, species) => {
         if (err) {
-            console.error("❌ Error updating species:", err.message);
-            return res.status(500).json({ error: "Failed to update species" });
+            console.error("❌ Error finding species:", err.message);
+            return res.status(500).json({ error: "Failed to find species" });
         }
-        console.log(`✅ Species updated for photo ${photo_id}: ${common_name}`);
-        res.json({ message: "Species updated successfully", photo_id, common_name });
+
+        if (!species) {
+            // Step 2: Insert species if it doesn't exist
+            const insertSpeciesQuery = `INSERT INTO bird_species (common_name) VALUES (?)`;
+
+            db.run(insertSpeciesQuery, [common_name], function (err) {
+                if (err) {
+                    console.error("❌ Error inserting species:", err.message);
+                    return res.status(500).json({ error: "Failed to insert species" });
+                }
+
+                console.log(`✅ Inserted new species: ${common_name} with ID ${this.lastID}`);
+
+                // Step 3: Link species to photo
+                linkSpeciesToPhoto(photo_id, this.lastID, res);
+            });
+        } else {
+            // If species exists, just link it to the photo
+            linkSpeciesToPhoto(photo_id, species.id, res);
+        }
     });
 });
+
+// ✅ Helper function to link species to photo (supports multiple species per image)
+function linkSpeciesToPhoto(photo_id, species_id, res) {
+    const checkExistingQuery = `
+        SELECT * FROM bird_photo_species WHERE photo_id = ? AND species_id = ?
+    `;
+
+    db.get(checkExistingQuery, [photo_id, species_id], (err, row) => {
+        if (err) {
+            console.error("❌ Error checking existing link:", err.message);
+            return res.status(500).json({ error: "Failed to check existing species link" });
+        }
+
+        if (row) {
+            console.log(`⚠️ Species ${species_id} is already linked to photo ${photo_id}, skipping.`);
+            return res.json({ message: "Species already linked", photo_id, species_id });
+        }
+
+        const insertRelationQuery = `
+            INSERT INTO bird_photo_species (photo_id, species_id) VALUES (?, ?)
+        `;
+
+        db.run(insertRelationQuery, [photo_id, species_id], function (err) {
+            if (err) {
+                console.error("❌ Error linking species to photo:", err.message);
+                return res.status(500).json({ error: "Failed to link species to photo" });
+            }
+
+            console.log(`✅ Linked species ${species_id} to photo ${photo_id}`);
+            res.json({ message: "Species updated successfully", photo_id, species_id });
+        });
+    });
+}
+
+
 
 app.post('/api/update-location', (req, res) => {
     const { photo_id, location } = req.body;
