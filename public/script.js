@@ -81,8 +81,6 @@ function displayPhotos(photos) {
                     <input type="text" id="location-input-${photo.id}" placeholder="Edit Location" style="display:none;">
                     <button id="update-location-${photo.id}" onclick="updateLocation(${photo.id})" style="display:none;">Update Location</button>
                 </div>
-
-                <button onclick="deletePhoto(${photo.id})" class="delete-btn">Delete Photo</button>
             `;
         }
 
