@@ -80,8 +80,9 @@ a {
 
 /* Style the dropdown */
 #species-filter {
-    font-size: 16px;
+    font-size: 14px;
     padding: 8px 10px;
+    font-family: 'Tiempos Text Web', serif;
     border: 1px solid black;
     background-color: white;
     font-family: inherit;
@@ -312,21 +313,9 @@ a {
     font-size: 14px;
 }
 
-select {
-    font-size: 14px;
-    font-family: 'Tiempos Text Web', serif;
-    padding: 6px;
-    width: 100%;
-    max-width: 250px;
-}
-
-select option {
-    font-size: 12px;
-}
 
 @media (max-width: 600px) {
     select {
-        font-size: 12px;
         max-width: 200px;
     }
 }
