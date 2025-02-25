@@ -112,7 +112,7 @@ def sync_database_with_firebase():
     stored_images = {row[0] for row in cursor.fetchall()}
     
     blobs = bucket.list_blobs()
-    firebase_images = {get_firebase_image_url(blob.name) for blob in blobs if blob.name.lower().endswith(('.jpg', '.jpeg', '.png'))}
+    firebase_images = {get_firebase_image_url(blob.name) for blob in blobs if blob.name.lower().endswith(('.jpg', '.jpeg', '.png', '.heic'))}
     
     missing_images = stored_images - firebase_images
     for missing in missing_images:
