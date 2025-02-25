@@ -39,6 +39,16 @@ const db = new sqlite3.Database(dbPath, (err) => {
 // ✅ Serve static files from the public folder
 app.use(express.static(FRONTEND_DIR));
 
+// ✅ Serve "home.html" at "/home" 
+app.get('/home', (req, res) => {
+    res.sendFile(path.join(__dirname, 'public', 'home.html')); 
+});
+
+// ✅ Serve "admin.html" at "/admin" 
+app.get('/admin', (req, res) => {
+    res.sendFile(path.join(__dirname, 'public', 'admin.html')); 
+});
+
 // Remove redundant express.static(FRONTEND_DIR)
 app.use('/api', (req, res, next) => {
     next(); // Allow API routes to be handled first
