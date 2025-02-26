@@ -137,7 +137,7 @@ a {
     grid-template-columns: repeat(3, 1fr); /* Always 3 columns */
     gap: 20px;
     padding: 0 20px;
-    max-width: 80vw;
+    max-width: 85vw;
     margin: 0 auto;
     justify-content: center; /* Centers items when there are fewer */
 }
