@@ -44,7 +44,7 @@ app.get('/home', (req, res) => {
     res.sendFile(path.join(__dirname, 'public', 'home.html')); 
 });
 
-// ✅ Serve "admin.html" at "/admin" 
+// ✅ Serve ".html" at "/admin" 
 app.get('/admin', (req, res) => {
     res.sendFile(path.join(__dirname, 'public', 'admin.html')); 
 });
@@ -89,20 +89,57 @@ app.post('/api/update-photographer', (req, res) => {
     const { photo_id, photographer } = req.body;
 
     if (!photo_id || !photographer) {
-        return res.status(400).json({ error: "Missing photo_id or photographer" });
+        return res.status(400).json({ error: "Missing photo_id or photographer name" });
     }
 
-    const query = `UPDATE bird_photos SET photographer = ? WHERE id = ?`;
+    // Step 1: Check if photographer exists in users table
+    const checkUserQuery = `SELECT id FROM users WHERE name = ?`;
 
-    db.run(query, [photographer, photo_id], function (err) {
+    db.get(checkUserQuery, [photographer], (err, user) => {
         if (err) {
-            console.error("❌ Error updating photographer:", err.message);
-            return res.status(500).json({ error: "Failed to update photographer" });
+            console.error("❌ Error checking user:", err);
+            return res.status(500).json({ error: "Database error checking user" });
         }
-        console.log(`✅ Photographer updated for photo ${photo_id}: ${photographer}`);
-        res.json({ message: "Photographer updated successfully", photo_id, photographer });
+
+        if (!user) {
+            // Step 2: If user does not exist, insert them
+            const insertUserQuery = `INSERT INTO users (name) VALUES (?)`;
+            db.run(insertUserQuery, [photographer], function (err) {
+                if (err) {
+                    console.error("❌ Error inserting user:", err);
+                    return res.status(500).json({ error: "Database error inserting user" });
+                }
+
+                const newUserId = this.lastID;
+
+                // Step 3: Update bird_photos with new user ID
+                const updatePhotoQuery = `UPDATE bird_photos SET photographer_id = ? WHERE id = ?`;
+                db.run(updatePhotoQuery, [newUserId, photo_id], function (err) {
+                    if (err) {
+                        console.error("❌ Error updating photo:", err);
+                        return res.status(500).json({ error: "Database error updating photo" });
+                    }
+
+                    console.log(`✅ Photographer updated for photo ${photo_id}: ${photographer} (New User ID: ${newUserId})`);
+                    res.json({ message: "Photographer updated successfully", photo_id, photographer });
+                });
+            });
+        } else {
+            // Step 4: If user exists, just update bird_photos with existing user ID
+            const updatePhotoQuery = `UPDATE bird_photos SET photographer_id = ? WHERE id = ?`;
+            db.run(updatePhotoQuery, [user.id, photo_id], function (err) {
+                if (err) {
+                    console.error("❌ Error updating photo:", err);
+                    return res.status(500).json({ error: "Database error updating photo" });
+                }
+
+                console.log(`✅ Photographer updated for photo ${photo_id}: ${photographer} (Existing User ID: ${user.id})`);
+                res.json({ message: "Photographer updated successfully", photo_id, photographer });
+            });
+        }
     });
 });
+
 
 
 async function preloadSpecies() {
