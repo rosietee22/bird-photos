@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Upload Bird Photo</title>
+    <script src="https://www.gstatic.com/firebasejs/10.10.0/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.10.0/firebase-auth.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.10.0/firebase-storage.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.10.0/firebase-firestore.js"></script>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <a href="home.html"><img src="assets/logo.svg" alt="Bird Pictures Logo" class="logo"></a>
+    <p>Upload a Bird Photo</p>
+
+    <div id="upload-container" style="display: none;"> 
+        <input type="file" id="file-input" accept="image/*">
+        <button onclick="uploadFile()">Upload</button>
+    </div>
+
+    <div id="upload-status"></div>
+
+    <script>
+        const firebaseConfig = {
+            apiKey: "YOUR_API_KEY",
+            authDomain: "YOUR_PROJECT.firebaseapp.com",
+            projectId: "YOUR_PROJECT_ID",
+            storageBucket: "YOUR_PROJECT.appspot.com",
+            messagingSenderId: "YOUR_SENDER_ID",
+            appId: "YOUR_APP_ID"
+        };
+
+        firebase.initializeApp(firebaseConfig);
+
+        function checkAuth() {
+            firebase.auth().onAuthStateChanged(user => {
+                if (user) {
+                    document.getElementById("upload-container").style.display = "block"; // Show upload form
+                } else {
+                    window.location.href = "login.html"; // Redirect if not logged in
+                }
+            });
+        }
+
+        function uploadFile() {
+            const user = firebase.auth().currentUser;
+            if (!user) {
+                alert("You need to log in to upload a photo.");
+                return;
+            }
+
+            const fileInput = document.getElementById("file-input").files[0];
+            if (!fileInput) {
+                alert("Please select a file.");
+                return;
+            }
+
+            const storageRef = firebase.storage().ref(`pending_approval/${fileInput.name}`);
+            const uploadTask = storageRef.put(fileInput);
+
+            uploadTask.on(
+                "state_changed",
+                snapshot => {
+                    const progress = (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
+                    document.getElementById("upload-status").innerText = `Upload is ${progress.toFixed(0)}% done`;
+                },
+                error => {
+                    console.error("❌ Upload error:", error);
+                    alert("Error uploading file.");
+                },
+                () => {
+                    document.getElementById("upload-status").innerText = "✅ Upload complete! Waiting for admin approval.";
+                }
+            );
+        }
+
+        document.addEventListener("DOMContentLoaded", checkAuth);
+    </script>
+</body>
+</html>

@@ -1,5 +1,5 @@
 body {
-    font-family: 'Tiempos Text Web', serif;
+    font-family: PT serif;
     background-color: #f7f7f7;
     margin: 0;
     text-align: center;
@@ -42,7 +42,7 @@ header {
 
 p,
 a {
-    font-size: 16px;
+    font-size: 17px;
     color: #000000;
 }
 
@@ -75,20 +75,21 @@ a {
     justify-content: center;
     margin-bottom: 20px;
     gap: 10px;
-    /* Adds spacing between label and dropdown */
-}
+} /* Added missing closing brace */
 
 /* Style the dropdown */
 #species-filter {
-    font-size: 14px;
     padding: 8px 10px;
     font-family: 'Tiempos Text Web', serif;
     border: 1px solid black;
     background-color: white;
-    font-family: inherit;
     border-radius: 6px;
     cursor: pointer;
     transition: all 0.2s ease-in-out;
+    font-family: 'Tiempos Text Web', serif !important; /* Force correct font */
+    font-size: 14px !important; /* Set a fixed font size */
+    color: black !important; /* Ensures text color remains black */
+    text-align: left; /* Align text properly */
 }
 
 /* Dropdown hover effect */
@@ -188,7 +189,7 @@ a {
     }
 
     .photo-card {
-        padding: 6vw;
+        padding: 4vw;
         /* Increase padding on smaller screens */
     }
 }
@@ -318,5 +319,12 @@ a {
     select {
         max-width: 200px;
     }
-}
 
+    .autocomplete-item {
+        font-size: 12px;
+    }
+
+    .species-dropdown {
+        max-height: 120px;
+    }
+}
