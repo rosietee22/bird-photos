@@ -25,7 +25,7 @@ function displayPhotos(photos) {
     const gallery = document.getElementById("photo-gallery");
     gallery.innerHTML = "";
 
-    const isAdminPage = window.location.pathname.includes("admin.html"); // Detect if in admin mode
+    const isAdminPage = window.location.pathname.includes("admin"); // Detect if in admin mode
 
     photos.forEach(photo => {
         const photoCard = document.createElement("div");
