@@ -13,7 +13,8 @@ function populateSpeciesFilter(photos) {
         }
     });
 
-    uniqueSpecies.forEach(species => {
+    // Convert Set to Array and sort alphabetically
+    Array.from(uniqueSpecies).sort().forEach(species => {
         const option = document.createElement("option");
         option.value = species;
         option.textContent = species;
