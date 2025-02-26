@@ -46,6 +46,7 @@ function displayPhotos(photos) {
         let formattedLocation = photo.location && photo.location.toLowerCase() !== "unknown" ? photo.location : "Unknown";
         const dateLocation = `${formattedDate}, ${formattedLocation}`;
 
+        // ✅ Ensure species_list always exists and format correctly
         let speciesList = photo.species_info && photo.species_info.length > 0
             ? photo.species_info
             : [{ common_name: "Unknown", scientific_name: "" }];
@@ -53,7 +54,8 @@ function displayPhotos(photos) {
         let speciesText = `<div id="species-container-${photo.id}"><strong>Species:</strong> ${
             speciesList.map(species => `
                 <span class="species-tag">
-                    ${species.common_name} ${species.scientific_name ? `(<i>${species.scientific_name}</i>)` : ""} 
+                    ${species.common_name} 
+                    ${!isAdminPage && species.scientific_name ? `(<i>${species.scientific_name}</i>)` : ""} 
                     ${species.common_name !== "Unknown" ? `<span class="remove-species" onclick="removeSpecies(${photo.id}, '${species.common_name}')">✖</span>` : ""}
                 </span>
             `).join(" ")}
