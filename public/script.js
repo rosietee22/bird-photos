@@ -57,12 +57,12 @@ function displayPhotos(photos) {
             `).join(" ")}
         </div>`;
 
-        let photographerName = photo.photographer || "Unknown"; // If no photographer, display 'Unknown'
+        let photographerName = photo.photographer && photo.photographer !== "Unknown" ? photo.photographer : "Unknown";
 
         // 🟢 Default Home Page Display (No Editing)
         let cardContent = `
             <div class="photo-info">${dateLocation}</div>
-            <img src="${photo.image_filename}" alt="Bird Photo">
+            <img src="${photo.image_filename}" alt="Bird Photo" loading="lazy">
             ${speciesText}
         `;
 
@@ -86,10 +86,10 @@ function displayPhotos(photos) {
 
                 <div id="photographer-container-${photo.id}">
                     <p id="photographer-text-${photo.id}" class="photographer-text">
-                        <strong>Photographer:</strong> ${photographerName}
+                        <strong>Photographer:</strong> <span id="photographer-name-${photo.id}">${photographerName}</span>
                         <button onclick="editPhotographer(${photo.id})">Edit</button>
                     </p>
-                    <input type="text" id="photographer-input-${photo.id}" placeholder="Edit Photographer Name" style="display:none;">
+                    <input type="text" id="photographer-input-${photo.id}" placeholder="Enter Photographer" style="display:none;">
                     <button id="update-photographer-${photo.id}" onclick="updatePhotographer(${photo.id})" style="display:none;">Update Photographer</button>
                 </div>
             `;
@@ -100,23 +100,26 @@ function displayPhotos(photos) {
     });
 }
 
+
 // 🔹 Function to Edit Photographer Name
 function editPhotographer(photoId) {
-    const currentPhotographer = document.getElementById(`photographer-text-${photoId}`);
-    const inputField = document.getElementById(`photographer-input-${photoId}`);
+    const photographerText = document.getElementById(`photographer-text-${photoId}`);
+    const photographerInput = document.getElementById(`photographer-input-${photoId}`);
     const updateButton = document.getElementById(`update-photographer-${photoId}`);
 
-    currentPhotographer.style.display = "none";
-    inputField.style.display = "inline-block";
+    // Show input and update button, hide current photographer text
+    photographerText.style.display = "none";
+    photographerInput.style.display = "inline-block";
     updateButton.style.display = "inline-block";
 
-    inputField.value = currentPhotographer.textContent.replace("Photographer:", "").trim();
+    // Pre-fill input with existing photographer name
+    photographerInput.value = photographerText.querySelector("span").textContent;
 }
 
 // 🔹 Function to Update Photographer in Database
 function updatePhotographer(photoId) {
-    const inputField = document.getElementById(`photographer-input-${photoId}`);
-    const newPhotographer = inputField.value.trim();
+    const photographerInput = document.getElementById(`photographer-input-${photoId}`);
+    const newPhotographer = photographerInput.value.trim();
 
     if (newPhotographer) {
         fetch(`${API_BASE_URL}/api/update-photographer`, {
@@ -132,21 +135,22 @@ function updatePhotographer(photoId) {
                     const photo = photos.find(p => p.id === photoId);
                     if (!photo) return;
 
-                    const currentPhotographer = document.getElementById(`photographer-text-${photoId}`);
-                    const inputField = document.getElementById(`photographer-input-${photoId}`);
+                    const photographerText = document.getElementById(`photographer-text-${photoId}`);
+                    const photographerInput = document.getElementById(`photographer-input-${photoId}`);
                     const updateButton = document.getElementById(`update-photographer-${photoId}`);
 
-                    // Update UI with new photographer
-                    currentPhotographer.innerHTML = `<strong>Photographer:</strong> ${photo.photographer}`;
-                    currentPhotographer.style.display = "inline";
-                    inputField.style.display = "none";
+                    // Update UI with new photographer name
+                    document.getElementById(`photographer-name-${photoId}`).textContent = photo.photographer;
+
+                    // Hide input and show text
+                    photographerText.style.display = "inline";
+                    photographerInput.style.display = "none";
                     updateButton.style.display = "none";
                 });
         })
         .catch(error => console.error("❌ Error updating photographer:", error));
     }
 }
-
 
 
 function fetchPhotos() {
