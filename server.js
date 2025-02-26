@@ -85,6 +85,26 @@ db.serialize(() => {
     });
 });
 
+app.post('/api/update-photographer', (req, res) => {
+    const { photo_id, photographer } = req.body;
+
+    if (!photo_id || !photographer) {
+        return res.status(400).json({ error: "Missing photo_id or photographer" });
+    }
+
+    const query = `UPDATE bird_photos SET photographer = ? WHERE id = ?`;
+
+    db.run(query, [photographer, photo_id], function (err) {
+        if (err) {
+            console.error("❌ Error updating photographer:", err.message);
+            return res.status(500).json({ error: "Failed to update photographer" });
+        }
+        console.log(`✅ Photographer updated for photo ${photo_id}: ${photographer}`);
+        res.json({ message: "Photographer updated successfully", photo_id, photographer });
+    });
+});
+
+
 async function preloadSpecies() {
     const cacheFile = './species_cache.json';
 
@@ -117,7 +137,7 @@ app.get('/api/photos', (req, res) => {
 
     const query = `
         SELECT bird_photos.id, bird_photos.image_filename, bird_photos.date_taken, bird_photos.location, 
-               bird_photos.latitude, bird_photos.longitude,
+               bird_photos.latitude, bird_photos.longitude, bird_photos.photographer,
                COALESCE(GROUP_CONCAT(bird_species.common_name, ', '), 'Unknown') AS species_names
         FROM bird_photos
         LEFT JOIN bird_photo_species ON bird_photos.id = bird_photo_species.photo_id
@@ -159,13 +179,15 @@ app.get('/api/photos', (req, res) => {
             } else {
                 row.image_filename = `https://firebasestorage.googleapis.com/v0/b/bird-pictures-953b0.firebasestorage.app/o/${encodeURIComponent(row.image_filename)}?alt=media`;
             }
+
+            // Ensure photographer field is always present
+            row.photographer = row.photographer || "Unknown";
         });
 
         res.json(rows);
     });
 });
-
-
+    
 app.get('/api/species-suggestions', async (req, res) => {
     const { query } = req.query;
     if (!query || query.length < 2) {
@@ -173,17 +195,25 @@ app.get('/api/species-suggestions', async (req, res) => {
     }
 
     const lowerQuery = query.toLowerCase();
+    
     if (speciesCache[lowerQuery]) {
         return res.json(speciesCache[lowerQuery]);
     }
 
+    // Improved search: Matches anywhere in the species name, prioritizes those that start with the query
     const speciesList = allSpecies
-        .filter(name => name.toLowerCase().startsWith(lowerQuery))
-        .slice(0, 5);
+        .filter(name => name.toLowerCase().includes(lowerQuery)) // Matches anywhere in the name
+        .sort((a, b) => {
+            const aStartsWith = a.toLowerCase().startsWith(lowerQuery) ? 0 : 1;
+            const bStartsWith = b.toLowerCase().startsWith(lowerQuery) ? 0 : 1;
+            return aStartsWith - bStartsWith; // Prioritize species that start with the query
+        })
+        .slice(0, 5); // Limit results to 5 suggestions
 
     speciesCache[lowerQuery] = speciesList;
     res.json(speciesList);
 });
+
 
 app.post('/api/update-species', (req, res) => {
     const { photo_id, common_name } = req.body;

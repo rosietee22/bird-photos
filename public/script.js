@@ -57,6 +57,8 @@ function displayPhotos(photos) {
             `).join(" ")}
         </div>`;
 
+        let photographerName = photo.photographer || "Unknown"; // If no photographer, display 'Unknown'
+
         // 🟢 Default Home Page Display (No Editing)
         let cardContent = `
             <div class="photo-info">${dateLocation}</div>
@@ -81,12 +83,68 @@ function displayPhotos(photos) {
                     <input type="text" id="location-input-${photo.id}" placeholder="Edit Location" style="display:none;">
                     <button id="update-location-${photo.id}" onclick="updateLocation(${photo.id})" style="display:none;">Update Location</button>
                 </div>
+
+                <div id="photographer-container-${photo.id}">
+                    <p id="photographer-text-${photo.id}" class="photographer-text">
+                        <strong>Photographer:</strong> ${photographerName}
+                        <button onclick="editPhotographer(${photo.id})">Edit</button>
+                    </p>
+                    <input type="text" id="photographer-input-${photo.id}" placeholder="Edit Photographer Name" style="display:none;">
+                    <button id="update-photographer-${photo.id}" onclick="updatePhotographer(${photo.id})" style="display:none;">Update Photographer</button>
+                </div>
             `;
         }
 
         photoCard.innerHTML = cardContent;
         gallery.appendChild(photoCard);
     });
+}
+
+// 🔹 Function to Edit Photographer Name
+function editPhotographer(photoId) {
+    const currentPhotographer = document.getElementById(`photographer-text-${photoId}`);
+    const inputField = document.getElementById(`photographer-input-${photoId}`);
+    const updateButton = document.getElementById(`update-photographer-${photoId}`);
+
+    currentPhotographer.style.display = "none";
+    inputField.style.display = "inline-block";
+    updateButton.style.display = "inline-block";
+
+    inputField.value = currentPhotographer.textContent.replace("Photographer:", "").trim();
+}
+
+// 🔹 Function to Update Photographer in Database
+function updatePhotographer(photoId) {
+    const inputField = document.getElementById(`photographer-input-${photoId}`);
+    const newPhotographer = inputField.value.trim();
+
+    if (newPhotographer) {
+        fetch(`${API_BASE_URL}/api/update-photographer`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ photo_id: photoId, photographer: newPhotographer })
+        })
+        .then(response => response.json())
+        .then(() => {
+            fetch(`${API_BASE_URL}/api/photos`)
+                .then(response => response.json())
+                .then(photos => {
+                    const photo = photos.find(p => p.id === photoId);
+                    if (!photo) return;
+
+                    const currentPhotographer = document.getElementById(`photographer-text-${photoId}`);
+                    const inputField = document.getElementById(`photographer-input-${photoId}`);
+                    const updateButton = document.getElementById(`update-photographer-${photoId}`);
+
+                    // Update UI with new photographer
+                    currentPhotographer.innerHTML = `<strong>Photographer:</strong> ${photo.photographer}`;
+                    currentPhotographer.style.display = "inline";
+                    inputField.style.display = "none";
+                    updateButton.style.display = "none";
+                });
+        })
+        .catch(error => console.error("❌ Error updating photographer:", error));
+    }
 }
 
 
