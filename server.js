@@ -183,7 +183,7 @@ app.get('/api/photos', (req, res) => {
         LEFT JOIN users ON bird_photos.photographer_id = users.id  
         GROUP BY bird_photos.id
         ORDER BY RANDOM()
-        LIMIT 50;
+        LIMIT 100;
     `;
 
     db.all(query, [], (err, rows) => {
@@ -251,44 +251,99 @@ app.get('/api/species-suggestions', async (req, res) => {
     res.json(speciesList);
 });
 
-
-app.post('/api/update-species', (req, res) => {
+app.post('/api/update-species', async (req, res) => {
     const { photo_id, common_name } = req.body;
 
     if (!photo_id || !common_name) {
         return res.status(400).json({ error: "Missing photo_id or common_name" });
     }
 
-    // Step 1: Check if the species already exists in bird_species
-    const findSpeciesQuery = `SELECT id FROM bird_species WHERE common_name = ?`;
+    try {
+        // Step 1: Check if species exists
+        const findSpeciesQuery = `SELECT id, scientific_name FROM bird_species WHERE common_name = ?`;
 
-    db.get(findSpeciesQuery, [common_name], (err, species) => {
-        if (err) {
-            console.error("❌ Error finding species:", err.message);
-            return res.status(500).json({ error: "Failed to find species" });
-        }
+        db.get(findSpeciesQuery, [common_name], async (err, species) => {
+            if (err) {
+                console.error("❌ Error finding species:", err.message);
+                return res.status(500).json({ error: "Failed to find species" });
+            }
 
-        if (!species) {
-            // Step 2: Insert species if it doesn't exist
-            const insertSpeciesQuery = `INSERT INTO bird_species (common_name) VALUES (?)`;
+            if (!species) {
+                // Step 2: Fetch species details from eBird API
+                let scientificName = null;
+                let family = null;
+                let orderName = null;
+                let status = "Not Extinct";
 
-            db.run(insertSpeciesQuery, [common_name], function (err) {
-                if (err) {
-                    console.error("❌ Error inserting species:", err.message);
-                    return res.status(500).json({ error: "Failed to insert species" });
+                try {
+                    const response = await fetch(`https://api.ebird.org/v2/ref/taxonomy/ebird?fmt=json`);
+                    const speciesData = await response.json();
+                    const speciesMatch = speciesData.find(s => s.comName.toLowerCase() === common_name.toLowerCase());
+
+                    if (speciesMatch) {
+                        scientificName = speciesMatch.sciName;
+                        family = speciesMatch.familyComName;
+                        orderName = speciesMatch.order;
+                        if (speciesMatch.extinct) status = "Extinct";
+                    } else {
+                        console.warn(`⚠️ No eBird match found for: ${common_name}`);
+                    }
+                } catch (apiError) {
+                    console.error("❌ Error fetching eBird data:", apiError);
                 }
 
-                console.log(`✅ Inserted new species: ${common_name} with ID ${this.lastID}`);
+                // Step 3: Insert new species with additional info
+                const insertSpeciesQuery = `
+                    INSERT INTO bird_species (common_name, scientific_name, family, order_name, status) 
+                    VALUES (?, ?, ?, ?, ?)
+                `;
 
-                // Step 3: Link species to photo
-                linkSpeciesToPhoto(photo_id, this.lastID, res);
-            });
-        } else {
-            // If species exists, just link it to the photo
-            linkSpeciesToPhoto(photo_id, species.id, res);
-        }
-    });
+                db.run(insertSpeciesQuery, [common_name, scientificName, family, orderName, status], function (err) {
+                    if (err) {
+                        console.error("❌ Error inserting species:", err.message);
+                        return res.status(500).json({ error: "Failed to insert species" });
+                    }
+
+                    console.log(`✅ Inserted new species: ${common_name} (${scientificName})`);
+                    linkSpeciesToPhoto(photo_id, this.lastID, res);
+                });
+
+            } else {
+                // If species exists, ensure it has a scientific name, and update if necessary
+                if (!species.scientific_name) {
+                    try {
+                        const response = await fetch(`https://api.ebird.org/v2/ref/taxonomy/ebird?fmt=json`);
+                        const speciesData = await response.json();
+                        const speciesMatch = speciesData.find(s => s.comName.toLowerCase() === common_name.toLowerCase());
+
+                        if (speciesMatch) {
+                            const updateQuery = `
+                                UPDATE bird_species 
+                                SET scientific_name = ?, family = ?, order_name = ?, status = ?
+                                WHERE id = ?
+                            `;
+                            db.run(updateQuery, [
+                                speciesMatch.sciName, speciesMatch.familyComName, speciesMatch.order,
+                                speciesMatch.extinct ? "Extinct" : "Not Extinct",
+                                species.id
+                            ]);
+                            console.log(`✅ Updated species: ${common_name} (${speciesMatch.sciName})`);
+                        }
+                    } catch (error) {
+                        console.error("⚠️ Failed to fetch scientific name for existing species:", error);
+                    }
+                }
+
+                // Step 4: Link species to the photo
+                linkSpeciesToPhoto(photo_id, species.id, res);
+            }
+        });
+    } catch (error) {
+        console.error("❌ Server error updating species:", error);
+        res.status(500).json({ error: "Internal server error" });
+    }
 });
+
 
 // ✅ Helper function to link species to photo (supports multiple species per image)
 function linkSpeciesToPhoto(photo_id, species_id, res) {
@@ -322,6 +377,7 @@ function linkSpeciesToPhoto(photo_id, species_id, res) {
         });
     });
 }
+
 
 function filterPhotos() {
     const selectedSpecies = document.getElementById("species-filter").value;
