@@ -136,15 +136,17 @@ app.get('/api/photos', (req, res) => {
     }
 
     const query = `
-        SELECT bird_photos.id, bird_photos.image_filename, bird_photos.date_taken, bird_photos.location, 
-               bird_photos.latitude, bird_photos.longitude, bird_photos.photographer,
+        SELECT bird_photos.id, bird_photos.image_filename, bird_photos.date_taken, 
+               bird_photos.location, bird_photos.latitude, bird_photos.longitude, 
+               COALESCE(users.name, 'Unknown') AS photographer,  
                COALESCE(GROUP_CONCAT(bird_species.common_name, ', '), 'Unknown') AS species_names
         FROM bird_photos
         LEFT JOIN bird_photo_species ON bird_photos.id = bird_photo_species.photo_id
         LEFT JOIN bird_species ON bird_photo_species.species_id = bird_species.id
+        LEFT JOIN users ON bird_photos.photographer_id = users.id  
         GROUP BY bird_photos.id
         ORDER BY RANDOM()
-        LIMIT 50
+        LIMIT 50;
     `;
 
     db.all(query, [], (err, rows) => {
@@ -179,15 +181,13 @@ app.get('/api/photos', (req, res) => {
             } else {
                 row.image_filename = `https://firebasestorage.googleapis.com/v0/b/bird-pictures-953b0.firebasestorage.app/o/${encodeURIComponent(row.image_filename)}?alt=media`;
             }
-
-            // Ensure photographer field is always present
-            row.photographer = row.photographer || "Unknown";
         });
 
         res.json(rows);
     });
 });
-    
+
+
 app.get('/api/species-suggestions', async (req, res) => {
     const { query } = req.query;
     if (!query || query.length < 2) {
