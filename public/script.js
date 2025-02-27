@@ -210,36 +210,77 @@ function fetchSpeciesSuggestions(photoId) {
         .catch(error => console.error("❌ Error fetching species suggestions:", error));
 }
 
-function updateSpecies(photoId) {
-    const inputField = document.getElementById(`species-${photoId}`);
-    const speciesName = inputField.value.trim();
+app.post('/api/update-species', async (req, res) => {
+    const { photo_id, common_name } = req.body;
 
-    if (speciesName) {
-        fetch(`${API_BASE_URL}/api/update-species`, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ photo_id: photoId, common_name: speciesName })
-        })
-        .then(response => response.json())
-        .then(data => {
-            console.log("✅ Species Updated:", data);
+    if (!photo_id || !common_name) {
+        return res.status(400).json({ error: "Missing photo_id or common_name" });
+    }
 
-            // 🔹 Immediately update UI
-            const speciesContainer = document.querySelector(`#species-container-${photoId}`);
-            if (speciesContainer) {
-                const newSpeciesTag = document.createElement("span");
-                newSpeciesTag.className = "species-tag";
-                newSpeciesTag.innerHTML = `${speciesName} <span class="remove-species" onclick="removeSpecies(${photoId}, '${speciesName}')">✖</span>`;
-                speciesContainer.appendChild(newSpeciesTag);
+    try {
+        // Step 1: Check if species exists by common name only
+        const findSpeciesQuery = `SELECT id FROM bird_species WHERE common_name = ?`;
+        db.get(findSpeciesQuery, [common_name], async (err, species) => {
+            if (err) {
+                console.error("❌ Error finding species:", err.message);
+                return res.status(500).json({ error: "Failed to find species" });
             }
 
-            // 🔹 Clear input field after update
-            inputField.value = "";
-        })
-        .catch(error => console.error("❌ Error updating species:", error));
+            if (!species) {
+                // Step 2: If species doesn't exist, insert new species with only common name.
+                const insertSpeciesQuery = `
+                    INSERT INTO bird_species (common_name, scientific_name, family, order_name, status) 
+                    VALUES (?, '', '', '', '')
+                `;
+                db.run(insertSpeciesQuery, [common_name], function (err) {
+                    if (err) {
+                        console.error("❌ Error inserting species:", err.message);
+                        return res.status(500).json({ error: "Failed to insert species" });
+                    }
+                    console.log(`✅ Inserted new species: ${common_name}`);
+                    linkSpeciesToPhoto(photo_id, this.lastID, res);
+                });
+            } else {
+                // Step 3: If species exists, update its extra information from eBird.
+                try {
+                    const response = await fetch(`https://api.ebird.org/v2/ref/taxonomy/ebird?fmt=json`);
+                    const speciesData = await response.json();
+                    const speciesMatch = speciesData.find(s => s.comName.toLowerCase() === common_name.toLowerCase());
+                    
+                    if (speciesMatch) {
+                        const updateQuery = `
+                            UPDATE bird_species 
+                            SET scientific_name = ?, family = ?, order_name = ?, status = ?
+                            WHERE id = ?
+                        `;
+                        db.run(updateQuery, [
+                            speciesMatch.sciName || '',
+                            speciesMatch.familyComName || '',
+                            speciesMatch.order || '',
+                            speciesMatch.extinct ? "Extinct" : "Not Extinct",
+                            species.id
+                        ], (updateErr) => {
+                            if (updateErr) {
+                                console.error("❌ Error updating species info:", updateErr.message);
+                            } else {
+                                console.log(`✅ Updated species info for: ${common_name}`);
+                            }
+                        });
+                    } else {
+                        console.warn(`⚠️ No eBird data found for ${common_name}`);
+                    }
+                } catch (apiError) {
+                    console.error("❌ Error fetching eBird data:", apiError);
+                }
+                // Finally, link the (updated) species to the photo.
+                linkSpeciesToPhoto(photo_id, species.id, res);
+            }
+        });
+    } catch (error) {
+        console.error("❌ Server error updating species:", error);
+        res.status(500).json({ error: "Internal server error" });
     }
-}
-
+});
 
 function updateBirdCard(photoId) {
     fetch(`${API_BASE_URL}/api/photos`)
