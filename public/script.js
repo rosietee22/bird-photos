@@ -51,24 +51,32 @@ function displayPhotos(photos) {
             ? photo.species_names.split(", ")
             : ["Unknown"];
 
-        let speciesText = `<div id="species-container-${photo.id}"><strong>Species:</strong> ${
-            speciesArray.map(species => `
-                <span class="species-tag">
-                    ${species}
-                    ${species !== "Unknown" ? `<span class="remove-species" onclick="removeSpecies(${photo.id}, '${species}')">✖</span>` : ""}
-                </span>
-            `).join(" ")}
-        </div>`;
+        // For admin pages, show remove buttons for each species.
+        // For home pages, just display the species as paragraph text.
+        let speciesText;
+        if (isAdminPage) {
+            speciesText = `<div id="species-container-${photo.id}"><strong>Species:</strong> ${
+                speciesArray.map(species => `
+                    <span class="species-tag">
+                        ${species} 
+                        ${species !== "Unknown" ? `<span class="remove-species" onclick="removeSpecies(${photo.id}, '${species}')">✖</span>` : ""}
+                    </span>
+                `).join(" ")
+            }</div>`;
+        } else {
+            speciesText = `<p><strong>Species:</strong> ${speciesArray.join(", ")}</p>`;
+        }
 
         let photographerName = photo.photographer && photo.photographer !== "Unknown" ? photo.photographer : "Unknown";
 
+        // Default display content for all pages
         let cardContent = `
             <div class="photo-info">${dateLocation}</div>
             <img src="${photo.image_filename}" alt="Bird Photo" loading="lazy">
             ${speciesText}
         `;
 
-        // Add admin features (edit inputs and buttons) if on the admin page.
+        // If on admin page, append editing controls.
         if (isAdminPage) {
             cardContent += `
                 <div class="species-edit">
