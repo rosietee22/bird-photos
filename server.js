@@ -267,7 +267,7 @@ app.post('/api/update-species', async (req, res) => {
     }
 
     try {
-        // Step 1: Check if species exists
+        // Step 1: Check if species exists and retrieve its id and scientific_name
         const findSpeciesQuery = `SELECT id, scientific_name FROM bird_species WHERE common_name = ?`;
 
         db.get(findSpeciesQuery, [common_name], async (err, species) => {
@@ -300,7 +300,7 @@ app.post('/api/update-species', async (req, res) => {
                     console.error("❌ Error fetching eBird data:", apiError);
                 }
 
-                // Step 3: Insert new species with additional info
+                // Step 3: Insert new species with the extra details
                 const insertSpeciesQuery = `
                     INSERT INTO bird_species (common_name, scientific_name, family, order_name, status) 
                     VALUES (?, ?, ?, ?, ?)
@@ -317,7 +317,7 @@ app.post('/api/update-species', async (req, res) => {
                 });
 
             } else {
-                // If species exists, ensure it has a scientific name, and update if necessary
+                // If species exists, update its extra information if missing
                 if (!species.scientific_name) {
                     try {
                         const response = await fetch(`https://api.ebird.org/v2/ref/taxonomy/ebird?fmt=json`);
@@ -351,6 +351,7 @@ app.post('/api/update-species', async (req, res) => {
         res.status(500).json({ error: "Internal server error" });
     }
 });
+
 
 
 // ✅ Helper function to link species to photo (supports multiple species per image)
