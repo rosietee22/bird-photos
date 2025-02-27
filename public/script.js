@@ -96,7 +96,7 @@ function displayPhotos(photos) {
 
                 <div id="photographer-container-${photo.id}">
                     <p id="photographer-text-${photo.id}" class="photographer-text">
-                        <strong>Photographer:</strong> <span id="photographer-name-${photo.id}">${photographerName}</span>
+                        <strong>User:</strong> <span id="photographer-name-${photo.id}">${photographerName}</span>
                         <button onclick="editPhotographer(${photo.id})">Edit</button>
                     </p>
                     <input type="text" id="photographer-input-${photo.id}" placeholder="Enter Photographer" style="display:none;">

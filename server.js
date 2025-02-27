@@ -41,12 +41,12 @@ app.use(express.static(FRONTEND_DIR));
 
 // ✅ Serve "home.html" at "/home" 
 app.get('/home', (req, res) => {
-    res.sendFile(path.join(__dirname, 'public', 'home.html')); 
+    res.sendFile(path.join(__dirname, 'public', 'home.html'));
 });
 
 // ✅ Serve ".html" at "/admin" 
 app.get('/admin', (req, res) => {
-    res.sendFile(path.join(__dirname, 'public', 'admin.html')); 
+    res.sendFile(path.join(__dirname, 'public', 'admin.html'));
 });
 
 // Remove redundant express.static(FRONTEND_DIR)
@@ -240,7 +240,7 @@ app.get('/api/species-suggestions', async (req, res) => {
     }
 
     const lowerQuery = query.toLowerCase();
-    
+
     if (speciesCache[lowerQuery]) {
         return res.json(speciesCache[lowerQuery]);
     }
@@ -352,6 +352,51 @@ app.post('/api/update-species', async (req, res) => {
     }
 });
 
+app.get('/api/pending-photos', (req, res) => {
+    const query = `
+      SELECT bird_photos.id, bird_photos.image_filename, bird_photos.date_taken, 
+             bird_photos.location, bird_photos.latitude, bird_photos.longitude, 
+             COALESCE(users.name, 'Unknown') AS photographer,  
+             COALESCE(
+                 GROUP_CONCAT(
+                     CASE 
+                         WHEN bird_species.scientific_name IS NOT NULL 
+                         THEN bird_species.common_name || ' (' || bird_species.scientific_name || ')'
+                         ELSE bird_species.common_name
+                     END
+                 , ', '), 'Unknown') AS species_names
+      FROM bird_photos
+      LEFT JOIN bird_photo_species ON bird_photos.id = bird_photo_species.photo_id
+      LEFT JOIN bird_species ON bird_photo_species.species_id = bird_species.id
+      LEFT JOIN users ON bird_photos.photographer_id = users.id  
+      WHERE bird_photos.approved != 1
+      GROUP BY bird_photos.id
+      ORDER BY bird_photos.date_taken DESC;
+    `;
+    db.all(query, [], (err, rows) => {
+        if (err) {
+            console.error("❌ Error fetching pending photos:", err);
+            return res.status(500).json({ error: "Error fetching pending photos" });
+        }
+        res.json(rows);
+    });
+});
+
+app.post('/api/approve-photo', (req, res) => {
+    const { photo_id } = req.body;
+    if (!photo_id) {
+        return res.status(400).json({ error: "Missing photo_id" });
+    }
+    const query = `UPDATE bird_photos SET approved = 1 WHERE id = ?`;
+    db.run(query, [photo_id], function (err) {
+        if (err) {
+            console.error("❌ Error approving photo:", err);
+            return res.status(500).json({ error: "Error approving photo" });
+        }
+        console.log(`✅ Photo ${photo_id} approved`);
+        res.json({ message: "Photo approved", photo_id });
+    });
+});
 
 
 // ✅ Helper function to link species to photo (supports multiple species per image)

@@ -1,0 +1,78 @@
+<!-- approval.html -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Photo Approval - Bird Pictures</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <a href="/home"><img src="assets/logo.svg" alt="Bird Pictures Logo" class="logo"></a>
+  <h1>Photo Approval</h1>
+  <div id="photo-gallery"></div>
+
+  <script src="script.js"></script>
+  <script>
+    // When the page loads, fetch pending photos
+    document.addEventListener("DOMContentLoaded", fetchPendingPhotos);
+
+    function fetchPendingPhotos() {
+      fetch(`${API_BASE_URL}/api/pending-photos`)
+        .then(response => response.json())
+        .then(photos => {
+           displayApprovalPhotos(photos);
+        })
+        .catch(error => console.error("❌ Error fetching pending photos:", error));
+    }
+
+    function displayApprovalPhotos(photos) {
+      const gallery = document.getElementById("photo-gallery");
+      gallery.innerHTML = "";
+      photos.forEach(photo => {
+         const photoCard = document.createElement("div");
+         photoCard.className = "photo-card";
+         photoCard.id = `photo-${photo.id}`;
+
+         let formattedDate = "Unknown date";
+         if (photo.date_taken) {
+            const dateObj = new Date(photo.date_taken);
+            formattedDate = dateObj.toLocaleDateString("en-GB", { day: "2-digit", month: "long", year: "numeric" });
+         }
+         let formattedLocation = photo.location && photo.location.toLowerCase() !== "unknown" ? photo.location : "Unknown";
+         const dateLocation = `${formattedDate}, ${formattedLocation}`;
+
+         // Use species_names from the database (as a comma-separated string)
+         let speciesText = `<p><strong>Species:</strong> ${photo.species_names}</p>`;
+         let photographerName = photo.photographer && photo.photographer !== "Unknown" ? photo.photographer : "Unknown";
+         let cardContent = `
+           <div class="photo-info">${dateLocation}</div>
+           <img src="${photo.image_filename}" alt="Bird Photo" loading="lazy">
+           ${speciesText}
+           <p><strong>Photographer:</strong> ${photographerName}</p>
+         `;
+         // Add an "Approve" button
+         cardContent += `<button onclick="approvePhoto(${photo.id})">Approve</button>`;
+
+         photoCard.innerHTML = cardContent;
+         gallery.appendChild(photoCard);
+      });
+    }
+
+    function approvePhoto(photoId) {
+      fetch(`${API_BASE_URL}/api/approve-photo`, {
+         method: "POST",
+         headers: { "Content-Type": "application/json" },
+         body: JSON.stringify({ photo_id: photoId })
+      })
+      .then(response => response.json())
+      .then(data => {
+         console.log("Photo approved:", data);
+         // Remove the approved photo from the gallery.
+         document.getElementById(`photo-${photoId}`).remove();
+      })
+      .catch(error => console.error("Error approving photo:", error));
+    }
+  </script>
+</body>
+</html>
