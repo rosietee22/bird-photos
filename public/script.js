@@ -4,6 +4,8 @@ document.addEventListener("DOMContentLoaded", fetchPhotos);
 
 function populateSpeciesFilter(photos) {
     const filterDropdown = document.getElementById("species-filter");
+    if (!filterDropdown) return; // Exit if the element isn't found
+
     filterDropdown.innerHTML = `<option value="all">All Species</option>`;
 
     const uniqueSpecies = new Set();
@@ -21,6 +23,7 @@ function populateSpeciesFilter(photos) {
         filterDropdown.appendChild(option);
     });
 }
+
 
 function displayPhotos(photos) {
     const gallery = document.getElementById("photo-gallery");

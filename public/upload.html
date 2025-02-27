@@ -1,63 +1,102 @@
-<!-- upload.html -->
 <!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Upload Bird Photo</title>
-  <script src="https://www.gstatic.com/firebasejs/10.10.0/firebase-app.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/10.10.0/firebase-auth.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/10.10.0/firebase-storage.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/10.10.0/firebase-firestore.js"></script>
+  <!-- Firebase Compat Libraries -->
+  <script src="https://www.gstatic.com/firebasejs/11.3.1/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/11.3.1/firebase-analytics-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/11.3.1/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/11.3.1/firebase-storage-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/11.3.1/firebase-firestore-compat.js"></script>
   <link rel="stylesheet" href="styles.css">
+  <style>
+    /* Additional styling for the upload page */
+    body {
+      font-family: Arial, sans-serif;
+      background-color: #f7f7f7;
+      text-align: center;
+      margin: 0;
+      padding: 0;
+    }
+    .upload-container {
+      background: #fff;
+      padding: 20px;
+      margin: 40px auto;
+      width: 90%;
+      max-width: 400px;
+      border-radius: 8px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    }
+    .upload-container h1 {
+      font-size: 1.5em;
+      margin-bottom: 20px;
+    }
+    #file-input {
+      margin: 10px 0;
+      width: 100%;
+    }
+    button {
+      background-color: #1a00e8;
+      color: #fff;
+      border: none;
+      padding: 10px 20px;
+      font-size: 1em;
+      border-radius: 4px;
+      cursor: pointer;
+      transition: background-color 0.3s;
+      margin-top: 15px; /* margin above the button */
+    }
+    button:hover {
+      background-color: #1400b2;
+    }
+    #upload-status {
+      margin-top: 15px;
+      font-weight: bold;
+    }
+  </style>
 </head>
 <body>
   <a href="home.html"><img src="assets/logo.svg" alt="Bird Pictures Logo" class="logo"></a>
-  <p>Upload a Bird Photo</p>
-
-  <div id="upload-container" style="display: none;"> 
-    <input type="file" id="file-input" accept="image/*">
-    <button onclick="uploadFile()">Upload</button>
+  <div class="upload-container">
+    <h1>Upload a Bird Photo</h1>
+    <div id="upload-container" style="display: none;"> 
+      <input type="file" id="file-input" accept="image/*">
+      <br>
+      <button onclick="uploadFile()">Upload</button>
+    </div>
+    <div id="upload-status"></div>
   </div>
-
-  <div id="upload-status"></div>
-
   <script>
+    // Firebase configuration from your Firebase Console
     const firebaseConfig = {
-      apiKey: "YOUR_API_KEY",
-      authDomain: "YOUR_PROJECT.firebaseapp.com",
-      projectId: "YOUR_PROJECT_ID",
-      storageBucket: "YOUR_PROJECT.appspot.com",
-      messagingSenderId: "YOUR_SENDER_ID",
-      appId: "YOUR_APP_ID"
+      apiKey: "AIzaSyDkLWluUOc_L0Mtj6MwedKDF27Rh-HqwrQ",
+      authDomain: "bird-pictures-953b0.firebaseapp.com",
+      projectId: "bird-pictures-953b0",
+      storageBucket: "bird-pictures-953b0.firebasestorage.app",
+      messagingSenderId: "147061664067",
+      appId: "1:147061664067:web:071c574a5ef515db74a7f6",
+      measurementId: "G-Q6BXSD8K0P"
     };
 
+    // Initialize Firebase
     firebase.initializeApp(firebaseConfig);
+    firebase.analytics();
 
-    function checkAuth() {
-      firebase.auth().onAuthStateChanged(user => {
-        if (user) {
-          document.getElementById("upload-container").style.display = "block"; // Show upload form
-        } else {
-          window.location.href = "login.html"; // Redirect if not logged in
-        }
-      });
-    }
+    // Since login isn't required for now, show the upload form immediately.
+    document.addEventListener("DOMContentLoaded", () => {
+      document.getElementById("upload-container").style.display = "block";
+    });
 
     function uploadFile() {
-      const user = firebase.auth().currentUser;
-      if (!user) {
-        alert("You need to log in to upload a photo.");
-        return;
-      }
-
       const fileInput = document.getElementById("file-input").files[0];
       if (!fileInput) {
         alert("Please select a file.");
         return;
       }
 
-      // Upload to the pending_approval folder
+      // Upload to the "pending_approval" folder in Firebase Storage.
       const storageRef = firebase.storage().ref(`pending_approval/${fileInput.name}`);
       const uploadTask = storageRef.put(fileInput);
 
@@ -76,8 +115,6 @@
         }
       );
     }
-
-    document.addEventListener("DOMContentLoaded", checkAuth);
   </script>
 </body>
 </html>
