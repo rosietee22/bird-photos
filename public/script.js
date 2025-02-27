@@ -46,31 +46,29 @@ function displayPhotos(photos) {
         let formattedLocation = photo.location && photo.location.toLowerCase() !== "unknown" ? photo.location : "Unknown";
         const dateLocation = `${formattedDate}, ${formattedLocation}`;
 
-        // ✅ Ensure species_list always exists and format correctly
-        let speciesList = photo.species_info && photo.species_info.length > 0
-            ? photo.species_info
-            : [{ common_name: "Unknown", scientific_name: "" }];
+        // Use species_names string and split it into an array of common names.
+        let speciesArray = (photo.species_names && photo.species_names !== "Unknown")
+            ? photo.species_names.split(", ")
+            : ["Unknown"];
 
         let speciesText = `<div id="species-container-${photo.id}"><strong>Species:</strong> ${
-            speciesList.map(species => `
+            speciesArray.map(species => `
                 <span class="species-tag">
-                    ${species.common_name} 
-                    ${!isAdminPage && species.scientific_name ? `(<i>${species.scientific_name}</i>)` : ""} 
-                    ${species.common_name !== "Unknown" ? `<span class="remove-species" onclick="removeSpecies(${photo.id}, '${species.common_name}')">✖</span>` : ""}
+                    ${species}
+                    ${species !== "Unknown" ? `<span class="remove-species" onclick="removeSpecies(${photo.id}, '${species}')">✖</span>` : ""}
                 </span>
             `).join(" ")}
         </div>`;
 
         let photographerName = photo.photographer && photo.photographer !== "Unknown" ? photo.photographer : "Unknown";
 
-        // 🟢 Default Home Page Display (No Editing)
         let cardContent = `
             <div class="photo-info">${dateLocation}</div>
             <img src="${photo.image_filename}" alt="Bird Photo" loading="lazy">
             ${speciesText}
         `;
 
-        // 🔴 Add Admin Features (Edit, Delete) if on Admin Page
+        // Add admin features (edit inputs and buttons) if on the admin page.
         if (isAdminPage) {
             cardContent += `
                 <div class="species-edit">
@@ -103,6 +101,7 @@ function displayPhotos(photos) {
         gallery.appendChild(photoCard);
     });
 }
+
 
 
 // 🔹 Function to Edit Photographer Name
