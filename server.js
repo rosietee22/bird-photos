@@ -382,6 +382,26 @@ app.get('/api/pending-photos', (req, res) => {
     });
 });
 
+app.post('/api/add-photo', (req, res) => {
+    const { image_url, date_taken, location, photographer } = req.body;
+    if (!image_url) {
+      return res.status(400).json({ error: "Missing image_url" });
+    }
+    const query = `
+      INSERT INTO bird_photos (image_filename, date_taken, location, photographer, approved)
+      VALUES (?, ?, ?, ?, 0)
+    `;
+    db.run(query, [image_url, date_taken || null, location || "Unknown", photographer || "Unknown"], function(err) {
+      if (err) {
+        console.error("❌ Error adding photo:", err.message);
+        return res.status(500).json({ error: "Failed to add photo" });
+      }
+      console.log(`✅ Added photo with ID ${this.lastID}`);
+      res.json({ message: "Photo added successfully", photo_id: this.lastID });
+    });
+  });
+  
+
 app.post('/api/approve-photo', (req, res) => {
     const { photo_id } = req.body;
     if (!photo_id) {
