@@ -42,12 +42,22 @@
          let formattedLocation = photo.location && photo.location.toLowerCase() !== "unknown" ? photo.location : "Unknown";
          const dateLocation = `${formattedDate}, ${formattedLocation}`;
 
+         // Determine the correct image URL:
+         // If the stored value starts with "http", we assume it's complete (with token).
+         // Otherwise, we construct a URL that will lack the token.
+         let imageUrl;
+         if (photo.image_filename && photo.image_filename.startsWith("http")) {
+             imageUrl = photo.image_filename;
+         } else {
+             imageUrl = `https://firebasestorage.googleapis.com/v0/b/bird-pictures-953b0.firebasestorage.app/o/${encodeURIComponent(photo.image_filename)}?alt=media`;
+         }
+
          // Use species_names from the database (as a comma-separated string)
          let speciesText = `<p><strong>Species:</strong> ${photo.species_names}</p>`;
          let photographerName = photo.photographer && photo.photographer !== "Unknown" ? photo.photographer : "Unknown";
          let cardContent = `
            <div class="photo-info">${dateLocation}</div>
-           <img src="${photo.image_filename}" alt="Bird Photo" loading="lazy">
+           <img src="${imageUrl}" alt="Bird Photo" loading="lazy">
            ${speciesText}
            <p><strong>Photographer:</strong> ${photographerName}</p>
          `;
