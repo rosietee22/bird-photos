@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -11,57 +12,22 @@
   <script src="https://www.gstatic.com/firebasejs/11.3.1/firebase-storage-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/11.3.1/firebase-firestore-compat.js"></script>
   <link rel="stylesheet" href="styles.css">
-  <style>
-    /* Additional styling for the upload page */
-    body {
-      font-family: Arial, sans-serif;
-      background-color: #f7f7f7;
-      text-align: center;
-      margin: 0;
-      padding: 0;
-    }
-    .upload-container {
-      background: #fff;
-      padding: 20px;
-      margin: 40px auto;
-      width: 90%;
-      max-width: 400px;
-      border-radius: 8px;
-      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-    }
-    .upload-container h1 {
-      font-size: 1.5em;
-      margin-bottom: 20px;
-    }
-    #file-input {
-      margin: 10px 0;
-      width: 100%;
-    }
-    button {
-      background-color: #1a00e8;
-      color: #fff;
-      border: none;
-      padding: 10px 20px;
-      font-size: 1em;
-      border-radius: 4px;
-      cursor: pointer;
-      transition: background-color 0.3s;
-      margin-top: 15px; /* margin above the button */
-    }
-    button:hover {
-      background-color: #1400b2;
-    }
-    #upload-status {
-      margin-top: 15px;
-      font-weight: bold;
-    }
-  </style>
 </head>
+
 <body>
   <a href="home.html"><img src="assets/logo.svg" alt="Bird Pictures Logo" class="logo"></a>
+  <script>
+    // Minimal protection: prompt for a password before showing the upload form
+    const password = prompt("Please enter the upload password:");
+    if (password !== "wildlife") {
+      alert("Incorrect password. Access denied.");
+      window.location.href = "home.html"; // or another safe page
+    }
+  </script>
+
   <div class="upload-container">
     <h1>Upload a Bird Photo</h1>
-    <div id="upload-container" style="display: none;"> 
+    <div id="upload-container" style="display: none;">
       <input type="file" id="file-input" accept="image/*">
       <br>
       <button onclick="uploadFile()">Upload</button>
@@ -111,10 +77,32 @@
           alert("Error uploading file.");
         },
         () => {
-          document.getElementById("upload-status").innerText = "✅ Upload complete! Waiting for admin approval.";
+          // After upload completes, get the full download URL (including token)
+          uploadTask.snapshot.ref.getDownloadURL().then(downloadURL => {
+            console.log("File available at", downloadURL);
+            // Send the full download URL to your backend so it can be stored in your database
+            fetch(`${API_BASE_URL}/api/add-photo`, {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                image_url: downloadURL
+                // You can include additional metadata here if needed
+              })
+            })
+              .then(response => response.json())
+              .then(data => {
+                document.getElementById("upload-status").innerText = "✅ Upload complete! Waiting for admin approval.";
+              })
+              .catch(error => {
+                console.error("Error storing image metadata:", error);
+                alert("Error storing image metadata.");
+              });
+          });
         }
       );
+
     }
   </script>
 </body>
+
 </html>
