@@ -27,47 +27,65 @@
     }
 
     function displayApprovalPhotos(photos) {
-      const gallery = document.getElementById("photo-gallery");
-      gallery.innerHTML = "";
-      photos.forEach(photo => {
-         const photoCard = document.createElement("div");
-         photoCard.className = "photo-card";
-         photoCard.id = `photo-${photo.id}`;
+  const gallery = document.getElementById("photo-gallery");
+  gallery.innerHTML = "";
 
-         let formattedDate = "Unknown date";
-         if (photo.date_taken) {
-            const dateObj = new Date(photo.date_taken);
-            formattedDate = dateObj.toLocaleDateString("en-GB", { day: "2-digit", month: "long", year: "numeric" });
-         }
-         let formattedLocation = photo.location && photo.location.toLowerCase() !== "unknown" ? photo.location : "Unknown";
-         const dateLocation = `${formattedDate}, ${formattedLocation}`;
+  photos.forEach(photo => {
+    const photoCard = document.createElement("div");
+    photoCard.className = "photo-card";
+    photoCard.id = `photo-${photo.id}`;
 
-         // Determine the correct image URL:
-         // If the stored value starts with "http", we assume it's complete (with token).
-         // Otherwise, we construct a URL that will lack the token.
-         let imageUrl;
-         if (photo.image_filename && photo.image_filename.startsWith("http")) {
-             imageUrl = photo.image_filename;
-         } else {
-             imageUrl = `https://firebasestorage.googleapis.com/v0/b/bird-pictures-953b0.firebasestorage.app/o/${encodeURIComponent(photo.image_filename)}?alt=media`;
-         }
-
-         // Use species_names from the database (as a comma-separated string)
-         let speciesText = `<p><strong>Species:</strong> ${photo.species_names}</p>`;
-         let photographerName = photo.photographer && photo.photographer !== "Unknown" ? photo.photographer : "Unknown";
-         let cardContent = `
-           <div class="photo-info">${dateLocation}</div>
-           <img src="${imageUrl}" alt="Bird Photo" loading="lazy">
-           ${speciesText}
-           <p><strong>Photographer:</strong> ${photographerName}</p>
-         `;
-         // Add an "Approve" button
-         cardContent += `<button onclick="approvePhoto(${photo.id})">Approve</button>`;
-
-         photoCard.innerHTML = cardContent;
-         gallery.appendChild(photoCard);
+    // Format date
+    let formattedDate = "Unknown date";
+    if (photo.date_taken) {
+      const dateObj = new Date(photo.date_taken);
+      formattedDate = dateObj.toLocaleDateString("en-GB", {
+        day: "2-digit",
+        month: "long",
+        year: "numeric"
       });
     }
+
+    // Format location
+    let formattedLocation =
+      photo.location && photo.location.toLowerCase() !== "unknown"
+        ? photo.location
+        : "Unknown";
+    const dateLocation = `${formattedDate}, ${formattedLocation}`;
+
+    // Build the correct image URL
+    let imageUrl;
+    if (photo.image_filename && photo.image_filename.startsWith("http")) {
+      // If we already have a full URL (possibly with token), use it
+      imageUrl = photo.image_filename;
+    } else {
+      // Otherwise, we construct a URL from the short path + encodeURIComponent
+      const encodedPath = encodeURIComponent(photo.image_filename);
+      imageUrl = `https://firebasestorage.googleapis.com/v0/b/bird-pictures-953b0.firebasestorage.app/o/${encodedPath}?alt=media`;
+    }
+
+    // Species list
+    let speciesText = `<p><strong>Species:</strong> ${photo.species_names}</p>`;
+
+    // Photographer name
+    let photographerName =
+      photo.photographer && photo.photographer !== "Unknown"
+        ? photo.photographer
+        : "Unknown";
+
+    // Combine everything into the photo card
+    let cardContent = `
+      <div class="photo-info">${dateLocation}</div>
+      <img src="${imageUrl}" alt="Bird Photo" loading="lazy">
+      ${speciesText}
+      <p><strong>Photographer:</strong> ${photographerName}</p>
+      <button onclick="approvePhoto(${photo.id})">Approve</button>
+    `;
+
+    photoCard.innerHTML = cardContent;
+    gallery.appendChild(photoCard);
+  });
+}
 
     function approvePhoto(photoId) {
       fetch(`${API_BASE_URL}/api/approve-photo`, {
