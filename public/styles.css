@@ -65,7 +65,7 @@ a {
 
 .button:hover {
     background-color: #f7f7f7;
-    color: #1a00e8;
+    color: #000;
 }
 
 
@@ -263,7 +263,7 @@ a {
 
 .slideshow-container {
     width: 100%;
-    max-width: 350px;
+    max-width: 300px;
     height: auto;
     margin: 0 auto; /* Center horizontally */
     padding: 0; /* Remove extra padding */
