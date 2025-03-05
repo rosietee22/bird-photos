@@ -21,9 +21,12 @@ else:
 storage_client = storage.Client(credentials=credentials)
 
 def get_firebase_image_url(blob_name):
-    """Generate the correct Firebase Storage public URL"""
-    return f"https://firebasestorage.googleapis.com/v0/b/{bucket_name}/o/{blob_name}?alt=media"
+    """Generate the correct Firebase Storage public URL, encoding the blob name."""
+    # Using requests.utils.quote to ensure folder separators are encoded properly.
+    encoded_blob = requests.utils.quote(blob_name, safe='')
+    return f"https://firebasestorage.googleapis.com/v0/b/{bucket_name}/o/{encoded_blob}?alt=media"
 
+# Update bucket_name if needed. (Your approved photos work with this value.)
 bucket_name = "bird-pictures-953b0.firebasestorage.app"
 bucket = storage_client.bucket(bucket_name)
 
@@ -123,7 +126,8 @@ def sync_database_with_firebase():
     conn.close()
 
 def insert_new_images_from_firebase():
-    """Insert new images from Firebase Storage into the database with AI species recognition."""
+    """Insert new images from Firebase Storage into the database with AI species recognition.
+       New images are marked as pending approval (approved = 0)."""
     conn = sqlite3.connect(db_path)
     cursor = conn.cursor()
     
@@ -139,9 +143,17 @@ def insert_new_images_from_firebase():
             species_suggestions = get_species_suggestions(image_url)
             
             cursor.execute("""
-                INSERT INTO bird_photos (image_filename, date_taken, location, latitude, longitude, species_suggestions)
-                VALUES (?, ?, ?, ?, ?, ?)
-            """, (image_url, image_data['date_taken'], image_data['location'], image_data['latitude'], image_data['longitude'], species_suggestions))
+                INSERT INTO bird_photos (image_filename, date_taken, location, latitude, longitude, species_suggestions, approved)
+                VALUES (?, ?, ?, ?, ?, ?, ?)
+            """, (
+                image_url,
+                image_data['date_taken'],
+                image_data['location'],
+                image_data['latitude'],
+                image_data['longitude'],
+                species_suggestions,
+                0   # Mark as pending approval
+            ))
             print(f"✅ Inserted {image_url} into the database with AI species suggestions: {species_suggestions}")
     
     conn.commit()

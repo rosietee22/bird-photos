@@ -56,52 +56,42 @@
     });
 
     function uploadFile() {
-      const fileInput = document.getElementById("file-input").files[0];
-      if (!fileInput) {
-        alert("Please select a file.");
-        return;
-      }
+  const fileInput = document.getElementById("file-input").files[0];
+  if (!fileInput) {
+    alert("Please select a file.");
+    return;
+  }
 
-      // Upload to the "pending_approval" folder in Firebase Storage.
-      const storageRef = firebase.storage().ref(`pending_approval/${fileInput.name}`);
-      const uploadTask = storageRef.put(fileInput);
+  // Upload to the "pending_approval" folder in Firebase Storage.
+  const storageRef = firebase.storage().ref(`pending_approval/${fileInput.name}`);
+  const uploadTask = storageRef.put(fileInput);
 
-      uploadTask.on(
-        "state_changed",
-        snapshot => {
-          const progress = (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
-          document.getElementById("upload-status").innerText = `Upload is ${progress.toFixed(0)}% done`;
-        },
-        error => {
-          console.error("❌ Upload error:", error);
-          alert("Error uploading file.");
-        },
-        () => {
-          // After upload completes, get the full download URL (including token)
-          uploadTask.snapshot.ref.getDownloadURL().then(downloadURL => {
-            console.log("File available at", downloadURL);
-            // Send the full download URL to your backend so it can be stored in your database
-            fetch(`${API_BASE_URL}/api/add-photo`, {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({
-                image_url: downloadURL
-                // You can include additional metadata here if needed
-              })
-            })
-              .then(response => response.json())
-              .then(data => {
-                document.getElementById("upload-status").innerText = "✅ Upload complete! Waiting for admin approval.";
-              })
-              .catch(error => {
-                console.error("Error storing image metadata:", error);
-                alert("Error storing image metadata.");
-              });
-          });
-        }
-      );
-
+  uploadTask.on(
+    "state_changed",
+    snapshot => {
+      const progress = (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
+      document.getElementById("upload-status").innerText = `Upload is ${progress.toFixed(0)}% done`;
+    },
+    error => {
+      console.error("❌ Upload error:", error);
+      alert("Error uploading file.");
+    },
+    () => {
+      // After upload completes, get the full download URL (including token)
+      uploadTask.snapshot.ref.getDownloadURL().then(downloadURL => {
+        console.log("File available at", downloadURL);
+        // Instead of sending the URL to the backend immediately, we just display a message.
+        document.getElementById("upload-status").innerText = "✅ Upload complete! Waiting for admin approval.";
+        // Optionally, you could trigger the Python process here (via a webhook or similar)
+        // but for now, we rely on the Python script to run on schedule.
+      }).catch(error => {
+        console.error("Error retrieving download URL:", error);
+        alert("Error retrieving download URL.");
+      });
     }
+  );
+}
+
   </script>
 </body>
 

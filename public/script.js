@@ -1,6 +1,11 @@
 const API_BASE_URL = "https://birdpics.pics";
 
-document.addEventListener("DOMContentLoaded", fetchPhotos);
+document.addEventListener("DOMContentLoaded", () => {
+    // If the user is on /home or /admin, fetch all photos:
+    if (window.location.pathname.includes("home") || window.location.pathname.includes("admin")) {
+      fetchPhotos(); // => Calls /api/photos
+    }
+  });  
 
 function populateSpeciesFilter(photos) {
     const filterDropdown = document.getElementById("species-filter");

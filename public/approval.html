@@ -1,12 +1,14 @@
 <!-- approval.html -->
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Photo Approval - Bird Pictures</title>
   <link rel="stylesheet" href="styles.css">
 </head>
+
 <body>
   <a href="/home"><img src="assets/logo.svg" alt="Bird Pictures Logo" class="logo"></a>
   <p>Photo Approval</p>
@@ -21,86 +23,88 @@
       fetch(`${API_BASE_URL}/api/pending-photos`)
         .then(response => response.json())
         .then(photos => {
-           displayApprovalPhotos(photos);
+          displayApprovalPhotos(photos);
         })
         .catch(error => console.error("❌ Error fetching pending photos:", error));
     }
 
     function displayApprovalPhotos(photos) {
-  const gallery = document.getElementById("photo-gallery");
-  gallery.innerHTML = "";
+      const gallery = document.getElementById("photo-gallery");
+      gallery.innerHTML = "";
 
-  photos.forEach(photo => {
-    const photoCard = document.createElement("div");
-    photoCard.className = "photo-card";
-    photoCard.id = `photo-${photo.id}`;
+      photos.forEach(photo => {
+        // Create outer card div
+        const photoCard = document.createElement("div");
+        photoCard.className = "photo-card";
+        photoCard.id = `photo-${photo.id}`;
 
-    // Format date
-    let formattedDate = "Unknown date";
-    if (photo.date_taken) {
-      const dateObj = new Date(photo.date_taken);
-      formattedDate = dateObj.toLocaleDateString("en-GB", {
-        day: "2-digit",
-        month: "long",
-        year: "numeric"
+        // Format Date
+        let formattedDate = "Unknown date";
+        if (photo.date_taken) {
+          const dateObj = new Date(photo.date_taken);
+          formattedDate = dateObj.toLocaleDateString("en-GB", {
+            day: "2-digit",
+            month: "long",
+            year: "numeric"
+          });
+        }
+
+        // Format Location
+        let formattedLocation =
+          photo.location && photo.location.toLowerCase() !== "unknown"
+            ? photo.location
+            : "Unknown";
+        const dateLocation = `${formattedDate}, ${formattedLocation}`;
+
+        // Construct image URL if needed
+        let finalImageUrl = photo.image_filename;
+        if (!finalImageUrl || !finalImageUrl.startsWith("http")) {
+          // If the DB only has a short path like 'pending_approval/IMG_0161.jpg'
+          // then encode it + prefix with the correct domain
+          const encodedPath = encodeURIComponent(finalImageUrl || "");
+          finalImageUrl = `https://firebasestorage.googleapis.com/v0/b/bird-pictures-953b0.firebasestorage.app/o/${encodedPath}?alt=media`;
+        }
+
+        // Species text
+        let speciesText = `<p><strong>Species:</strong> ${photo.species_names || "Unknown"}</p>`;
+
+        // Photographer
+        let photographerName =
+          photo.photographer && photo.photographer !== "Unknown"
+            ? photo.photographer
+            : "Unknown";
+
+        // Build the card's HTML
+        let cardContent = `
+            <div class="photo-info">${dateLocation}</div>
+            <img src="${finalImageUrl}" alt="Bird Photo" loading="lazy">
+            ${speciesText}
+            <p><strong>Photographer:</strong> ${photographerName}</p>
+            <button onclick="approvePhoto(${photo.id})">Approve</button>
+        `;
+
+        // Insert into the DOM
+        photoCard.innerHTML = cardContent;
+        gallery.appendChild(photoCard);
       });
     }
 
-    // Format location
-    let formattedLocation =
-      photo.location && photo.location.toLowerCase() !== "unknown"
-        ? photo.location
-        : "Unknown";
-    const dateLocation = `${formattedDate}, ${formattedLocation}`;
-
-    // Build the correct image URL
-    let imageUrl;
-    if (photo.image_filename && photo.image_filename.startsWith("http")) {
-      // If we already have a full URL (possibly with token), use it
-      imageUrl = photo.image_filename;
-    } else {
-      // Otherwise, we construct a URL from the short path + encodeURIComponent
-      const encodedPath = encodeURIComponent(photo.image_filename);
-      imageUrl = `https://firebasestorage.googleapis.com/v0/b/bird-pictures-953b0.firebasestorage.app/o/${encodedPath}?alt=media`;
-    }
-
-    // Species list
-    let speciesText = `<p><strong>Species:</strong> ${photo.species_names}</p>`;
-
-    // Photographer name
-    let photographerName =
-      photo.photographer && photo.photographer !== "Unknown"
-        ? photo.photographer
-        : "Unknown";
-
-    // Combine everything into the photo card
-    let cardContent = `
-      <div class="photo-info">${dateLocation}</div>
-      <img src="${imageUrl}" alt="Bird Photo" loading="lazy">
-      ${speciesText}
-      <p><strong>Photographer:</strong> ${photographerName}</p>
-      <button onclick="approvePhoto(${photo.id})">Approve</button>
-    `;
-
-    photoCard.innerHTML = cardContent;
-    gallery.appendChild(photoCard);
-  });
-}
 
     function approvePhoto(photoId) {
       fetch(`${API_BASE_URL}/api/approve-photo`, {
-         method: "POST",
-         headers: { "Content-Type": "application/json" },
-         body: JSON.stringify({ photo_id: photoId })
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ photo_id: photoId })
       })
-      .then(response => response.json())
-      .then(data => {
-         console.log("Photo approved:", data);
-         // Remove the approved photo from the gallery.
-         document.getElementById(`photo-${photoId}`).remove();
-      })
-      .catch(error => console.error("Error approving photo:", error));
+        .then(response => response.json())
+        .then(data => {
+          console.log("Photo approved:", data);
+          // Remove the approved photo from the gallery.
+          document.getElementById(`photo-${photoId}`).remove();
+        })
+        .catch(error => console.error("Error approving photo:", error));
     }
   </script>
 </body>
+
 </html>
