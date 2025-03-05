@@ -34,6 +34,7 @@ header {
     display: block;
     margin: 0 auto;
     padding-top: 40px;
+    padding-bottom: 10px;
 }
 
 .index-page .logo {
@@ -54,10 +55,10 @@ a {
     display: inline-block;
     padding: 8px 16px;
     background-color: #f7f7f7;
-    color: #1a00e8;
+    color: #000000;
     text-decoration: none;
     font-size: 16px;
-    border: 2px solid #1a00e8;
+    border: 2px solid #000000;
     transition: 0.3s;
     margin-bottom: 20px;
 }
@@ -73,7 +74,7 @@ a {
     display: flex;
     align-items: center;
     justify-content: center;
-    margin-bottom: 20px;
+    margin-bottom: 80px;
     gap: 10px;
 } /* Added missing closing brace */
 
