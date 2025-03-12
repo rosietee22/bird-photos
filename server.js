@@ -164,6 +164,7 @@ async function preloadSpecies() {
 
 preloadSpecies();
 
+
 app.get('/api/photos', (req, res) => {
     console.log("🔍 Received request for /api/photos");
 
@@ -177,13 +178,8 @@ app.get('/api/photos', (req, res) => {
                bird_photos.location, bird_photos.latitude, bird_photos.longitude, 
                COALESCE(users.name, 'Unknown') AS photographer,  
                COALESCE(
-                   GROUP_CONCAT(
-                       CASE 
-                           WHEN bird_species.scientific_name IS NOT NULL 
-                           THEN bird_species.common_name || ' (' || bird_species.scientific_name || ')'
-                           ELSE bird_species.common_name
-                       END
-                   , ', '), 'Unknown') AS species_names
+                   GROUP_CONCAT(bird_species.common_name, ', '), 'Unknown'
+               ) AS species_names
         FROM bird_photos
         LEFT JOIN bird_photo_species ON bird_photos.id = bird_photo_species.photo_id
         LEFT JOIN bird_species ON bird_photo_species.species_id = bird_species.id
@@ -358,13 +354,8 @@ app.get('/api/pending-photos', (req, res) => {
              bird_photos.location, bird_photos.latitude, bird_photos.longitude, 
              COALESCE(users.name, 'Unknown') AS photographer,  
              COALESCE(
-                 GROUP_CONCAT(
-                     CASE 
-                         WHEN bird_species.scientific_name IS NOT NULL 
-                         THEN bird_species.common_name || ' (' || bird_species.scientific_name || ')'
-                         ELSE bird_species.common_name
-                     END
-                 , ', '), 'Unknown') AS species_names
+                 GROUP_CONCAT(bird_species.common_name, ', '), 'Unknown'
+             ) AS species_names
       FROM bird_photos
       LEFT JOIN bird_photo_species ON bird_photos.id = bird_photo_species.photo_id
       LEFT JOIN bird_species ON bird_photo_species.species_id = bird_species.id
@@ -381,6 +372,7 @@ app.get('/api/pending-photos', (req, res) => {
         res.json(rows);
     });
 });
+
 
 app.post('/api/add-photo', (req, res) => {
     const { image_url, date_taken, location, photographer } = req.body;
