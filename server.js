@@ -183,7 +183,8 @@ app.get('/api/photos', (req, res) => {
         FROM bird_photos
         LEFT JOIN bird_photo_species ON bird_photos.id = bird_photo_species.photo_id
         LEFT JOIN bird_species ON bird_photo_species.species_id = bird_species.id
-        LEFT JOIN users ON bird_photos.photographer_id = users.id  
+        LEFT JOIN users ON bird_photos.photographer_id = users.id
+        WHERE bird_photos.approved = 1 
         GROUP BY bird_photos.id
         ORDER BY RANDOM()
         LIMIT 100;
