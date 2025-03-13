@@ -5,7 +5,6 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Upload Bird Photo</title>
-  <!-- Firebase Compat Libraries -->
   <script src="https://www.gstatic.com/firebasejs/11.3.1/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/11.3.1/firebase-analytics-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/11.3.1/firebase-auth-compat.js"></script>
@@ -16,12 +15,12 @@
 
 <body>
   <a href="home.html"><img src="assets/logo2.png" alt="Bird Pictures Logo" class="logo"></a>
+
   <script>
-    // Minimal protection: prompt for a password before showing the upload form
     const password = prompt("Please enter the upload password:");
     if (password !== "wildlife") {
       alert("Incorrect password. Access denied.");
-      window.location.href = "home.html"; // or another safe page
+      window.location.href = "home.html";
     }
   </script>
 
@@ -33,9 +32,24 @@
       <button onclick="uploadFile()">Upload</button>
     </div>
     <div id="upload-status"></div>
+
+    <div id="metadata-form" style="display:none; margin-top:20px;">
+      <h3>Edit Photo Details</h3>
+      <img id="photo-preview" src="" style="max-width:300px;margin-bottom:15px;"><br>
+      <label>Date Taken:<br>
+        <input type="date" id="date_taken">
+      </label><br><br>
+      <label>Location:<br>
+        <input type="text" id="location" placeholder="Location">
+      </label><br><br>
+      <label>Your Name:<br>
+        <input type="text" id="photographer" placeholder="Photographer">
+      </label><br><br>
+      <button onclick="submitMetadata()">Save Details</button>
+    </div>
   </div>
+
   <script>
-    // Firebase configuration from your Firebase Console
     const firebaseConfig = {
       apiKey: "AIzaSyDkLWluUOc_L0Mtj6MwedKDF27Rh-HqwrQ",
       authDomain: "bird-pictures-953b0.firebaseapp.com",
@@ -46,123 +60,87 @@
       measurementId: "G-Q6BXSD8K0P"
     };
 
-    // Initialize Firebase
     firebase.initializeApp(firebaseConfig);
     firebase.analytics();
 
-    // Since login isn't required for now, show the upload form immediately.
     document.addEventListener("DOMContentLoaded", () => {
       document.getElementById("upload-container").style.display = "block";
     });
 
+    let currentPhotoId = null;
+
     function uploadFile() {
-  const fileInput = document.getElementById("file-input").files[0];
-  if (!fileInput) {
-    alert("Please select a file.");
-    return;
-  }
+      const fileInput = document.getElementById("file-input").files[0];
+      if (!fileInput) {
+        alert("Please select a file.");
+        return;
+      }
 
-  const storageRef = firebase.storage().ref(`pending_approval/${fileInput.name}`);
-  const uploadTask = storageRef.put(fileInput);
+      const storageRef = firebase.storage().ref(`pending_approval/${fileInput.name}`);
+      const uploadTask = storageRef.put(fileInput);
 
-  uploadTask.on(
-    "state_changed",
-    snapshot => {
-      const progress = (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
-      document.getElementById("upload-status").innerText = `Upload is ${progress.toFixed(0)}% done`;
-    },
-    error => {
-      console.error("❌ Upload error:", error);
-      alert("Error uploading file.");
-    },
-    () => {
-      uploadTask.snapshot.ref.getDownloadURL().then(downloadURL => {
-        console.log("File available at", downloadURL);
+      uploadTask.on("state_changed",
+        snapshot => {
+          const progress = (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
+          document.getElementById("upload-status").innerText = `Upload is ${progress.toFixed(0)}% done`;
+        },
+        error => {
+          console.error("❌ Upload error:", error);
+          alert("Error uploading file.");
+        },
+        () => {
+          uploadTask.snapshot.ref.getDownloadURL().then(downloadURL => {
+            fetch('/api/add-photo', {
+              method: 'POST',
+              headers: {'Content-Type': 'application/json'},
+              body: JSON.stringify({image_url: downloadURL})
+            })
+            .then(res => res.json())
+            .then(data => {
+              currentPhotoId = data.photo_id;
+              document.getElementById("upload-status").innerText = `✅ Upload complete! Photo ID: ${data.photo_id}`;
+              showMetadataForm(data, downloadURL);
+            })
+            .catch(error => {
+              console.error("Error sending metadata:", error);
+              alert("Error sending metadata.");
+            });
+          }).catch(error => {
+            console.error("Error retrieving URL:", error);
+            alert("Error retrieving URL.");
+          });
+        }
+      );
+    }
 
-        // ✅ POST metadata to backend immediately after upload
-        fetch('/api/add-photo', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json'
-          },
-          body: JSON.stringify({
-            image_url: downloadURL
-            // You can optionally add date_taken, location, latitude, longitude here if available
-          })
-        })
-        .then(res => res.json())
-        .then(data => {
-          document.getElementById("upload-status").innerHTML = `
-            ✅ Upload complete! Photo ID: ${data.photo_id}<br>
-            <img src="${downloadURL}" style="max-width:300px;margin-top:10px;"><br>
-            <button onclick="editMetadata(${data.photo_id})">Add details</button>
-          `;
-        })
-        .catch(error => {
-          console.error("Error sending metadata to backend:", error);
-          alert("Error sending photo metadata.");
-        });
-      }).catch(error => {
-        console.error("Error retrieving download URL:", error);
-        alert("Error retrieving download URL.");
+    function showMetadataForm(data, imageUrl) {
+      document.getElementById('photo-preview').src = imageUrl;
+      document.getElementById('date_taken').value = data.date_taken ? data.date_taken.substring(0,10) : '';
+      document.getElementById('location').value = data.location || '';
+      document.getElementById('photographer').value = data.photographer || '';
+      document.getElementById('metadata-form').style.display = 'block';
+    }
+
+    function submitMetadata() {
+      const date_taken = document.getElementById('date_taken').value;
+      const location = document.getElementById('location').value;
+      const photographer = document.getElementById('photographer').value;
+
+      fetch('/api/update-photo-details', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({photo_id: currentPhotoId, date_taken, location, photographer})
+      })
+      .then(res => res.json())
+      .then(response => {
+        alert("✅ Details saved successfully!");
+        document.getElementById('metadata-form').style.display = 'none';
+      })
+      .catch(error => {
+        console.error("Error updating metadata:", error);
+        alert("Error updating metadata.");
       });
     }
-  );
-}
-
-function editMetadata(photo_id) {
-  const date_taken = prompt("When was the photo taken? (YYYY-MM-DD)");
-  const location = prompt("Where was the photo taken?");
-  const photographer = prompt("Your name (photographer)?");
-
-  fetch('/api/update-photo-details', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json'
-    },
-    body: JSON.stringify({ photo_id, date_taken, location, photographer })
-  })
-  .then(res => res.json())
-  .then(response => {
-    alert(response.message);
-  })
-  .catch(error => {
-    console.error("Error updating metadata:", error);
-    alert("Error updating metadata.");
-  });
-}
-
-
-  // Upload to the "pending_approval" folder in Firebase Storage.
-  const storageRef = firebase.storage().ref(`pending_approval/${fileInput.name}`);
-  const uploadTask = storageRef.put(fileInput);
-
-  uploadTask.on(
-    "state_changed",
-    snapshot => {
-      const progress = (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
-      document.getElementById("upload-status").innerText = `Upload is ${progress.toFixed(0)}% done`;
-    },
-    error => {
-      console.error("❌ Upload error:", error);
-      alert("Error uploading file.");
-    },
-    () => {
-      // After upload completes, get the full download URL (including token)
-      uploadTask.snapshot.ref.getDownloadURL().then(downloadURL => {
-        console.log("File available at", downloadURL);
-        // Instead of sending the URL to the backend immediately, we just display a message.
-        document.getElementById("upload-status").innerText = "✅ Upload complete! Waiting for admin approval.";
-        // Optionally, you could trigger the Python process here (via a webhook or similar)
-        // but for now, we rely on the Python script to run on schedule.
-      }).catch(error => {
-        console.error("Error retrieving download URL:", error);
-        alert("Error retrieving download URL.");
-      });
-    }
-  );
-
-
   </script>
 </body>
 
