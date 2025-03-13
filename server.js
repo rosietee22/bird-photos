@@ -376,25 +376,60 @@ app.get('/api/pending-photos', (req, res) => {
 
 
 app.post('/api/add-photo', (req, res) => {
-    const { image_url, date_taken, location, photographer } = req.body;
+    const { image_url, date_taken, location, latitude, longitude } = req.body;
+  
     if (!image_url) {
       return res.status(400).json({ error: "Missing image_url" });
     }
+  
     const query = `
-      INSERT INTO bird_photos (image_filename, date_taken, location, photographer, approved)
-      VALUES (?, ?, ?, ?, 0)
+      INSERT INTO bird_photos (image_filename, date_taken, location, latitude, longitude, approved)
+      VALUES (?, ?, ?, ?, ?, 0)
     `;
-    db.run(query, [image_url, date_taken || null, location || "Unknown", photographer || "Unknown"], function(err) {
+  
+    db.run(query, [image_url, date_taken || null, location || "Unknown", latitude || null, longitude || null], function(err) {
       if (err) {
         console.error("❌ Error adding photo:", err.message);
         return res.status(500).json({ error: "Failed to add photo" });
       }
-      console.log(`✅ Added photo with ID ${this.lastID}`);
-      res.json({ message: "Photo added successfully", photo_id: this.lastID });
+  
+      // ✅ Return metadata clearly to frontend
+      res.json({
+        photo_id: this.lastID,
+        image_url,
+        date_taken,
+        location,
+        latitude,
+        longitude
+      });
     });
   });
   
+  app.post('/api/update-photo-details', (req, res) => {
+    const { photo_id, date_taken, location, photographer } = req.body;
+  
+    if (!photo_id) {
+      return res.status(400).json({ error: "Missing photo_id" });
+    }
+  
+    db.run(`
+      UPDATE bird_photos SET
+        date_taken = ?, 
+        location = ?, 
+        photographer = ?
+      WHERE id = ?
+    `, [date_taken || null, location || 'Unknown', photographer || 'Unknown', photo_id], function(err) {
+      if (err) {
+        console.error("❌ Error updating photo details:", err.message);
+        return res.status(500).json({ error: "Failed to update photo details" });
+      }
+      console.log(`✅ Photo ${photo_id} updated successfully.`);
+      res.json({ message: "Details updated successfully", photo_id });
+    });
+  });
+    
 
+  
 app.post('/api/approve-photo', (req, res) => {
     const { photo_id } = req.body;
     if (!photo_id) {
