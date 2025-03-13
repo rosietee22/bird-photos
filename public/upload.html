@@ -28,7 +28,7 @@
   <div class="upload-container">
     <p>Upload a Bird Photo</p>
     <div id="upload-container" style="display: none;">
-      <input type="file" id="file-input" accept="image/*" capture="environment">
+      <input type="file" id="file-input" accept="image/*">
       <br>
       <button onclick="uploadFile()">Upload</button>
     </div>
@@ -62,6 +62,77 @@
     return;
   }
 
+  const storageRef = firebase.storage().ref(`pending_approval/${fileInput.name}`);
+  const uploadTask = storageRef.put(fileInput);
+
+  uploadTask.on(
+    "state_changed",
+    snapshot => {
+      const progress = (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
+      document.getElementById("upload-status").innerText = `Upload is ${progress.toFixed(0)}% done`;
+    },
+    error => {
+      console.error("❌ Upload error:", error);
+      alert("Error uploading file.");
+    },
+    () => {
+      uploadTask.snapshot.ref.getDownloadURL().then(downloadURL => {
+        console.log("File available at", downloadURL);
+
+        // ✅ POST metadata to backend immediately after upload
+        fetch('/api/add-photo', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            image_url: downloadURL
+            // You can optionally add date_taken, location, latitude, longitude here if available
+          })
+        })
+        .then(res => res.json())
+        .then(data => {
+          document.getElementById("upload-status").innerHTML = `
+            ✅ Upload complete! Photo ID: ${data.photo_id}<br>
+            <img src="${downloadURL}" style="max-width:300px;margin-top:10px;"><br>
+            <button onclick="editMetadata(${data.photo_id})">Add details</button>
+          `;
+        })
+        .catch(error => {
+          console.error("Error sending metadata to backend:", error);
+          alert("Error sending photo metadata.");
+        });
+      }).catch(error => {
+        console.error("Error retrieving download URL:", error);
+        alert("Error retrieving download URL.");
+      });
+    }
+  );
+}
+
+function editMetadata(photo_id) {
+  const date_taken = prompt("When was the photo taken? (YYYY-MM-DD)");
+  const location = prompt("Where was the photo taken?");
+  const photographer = prompt("Your name (photographer)?");
+
+  fetch('/api/update-photo-details', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify({ photo_id, date_taken, location, photographer })
+  })
+  .then(res => res.json())
+  .then(response => {
+    alert(response.message);
+  })
+  .catch(error => {
+    console.error("Error updating metadata:", error);
+    alert("Error updating metadata.");
+  });
+}
+
+
   // Upload to the "pending_approval" folder in Firebase Storage.
   const storageRef = firebase.storage().ref(`pending_approval/${fileInput.name}`);
   const uploadTask = storageRef.put(fileInput);
@@ -90,7 +161,7 @@
       });
     }
   );
-}
+
 
   </script>
 </body>
