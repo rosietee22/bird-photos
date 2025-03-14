@@ -1,13 +1,11 @@
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Photo Approval - Bird Pictures</title>
   <link rel="stylesheet" href="styles.css">
 </head>
-
 <body>
   <a href="/home"><img src="assets/logo2.png" alt="Bird Pictures Logo" class="logo"></a>
   <p>Photo Approval</p>
@@ -30,6 +28,11 @@
     function displayApprovalPhotos(photos) {
       const gallery = document.getElementById("photo-gallery");
       gallery.innerHTML = "";
+
+      if (!photos || photos.length === 0) {
+        gallery.innerHTML = "<p>No pics pending approval.</p>";
+        return;
+      }
 
       photos.forEach(photo => {
         // Create outer card div
@@ -71,7 +74,7 @@
             ? photo.photographer
             : "Unknown";
 
-        // Build the card's HTML including Approve and Delete buttons
+        // Build the card's HTML including Approve and Delete buttons.
         let cardContent = `
             <div class="photo-info">${dateLocation}</div>
             <img src="${finalImageUrl}" alt="Bird Photo" loading="lazy">
@@ -102,5 +105,4 @@
     }
   </script>
 </body>
-
 </html>

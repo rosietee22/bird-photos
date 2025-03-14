@@ -31,6 +31,7 @@
       <br>
       <button onclick="uploadFile()">Upload</button>
     </div>
+    <!-- Status messages are wrapped in a paragraph -->
     <div id="upload-status"></div>
 
     <div id="metadata-form" style="display:none; margin-top:20px;">
@@ -85,7 +86,8 @@
       uploadTask.on("state_changed",
         snapshot => {
           const progress = (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
-          document.getElementById("upload-status").innerText = `Upload is ${progress.toFixed(0)}% done`;
+          // Wrap status message in <p> tags
+          document.getElementById("upload-status").innerHTML = `<p>Upload is ${progress.toFixed(0)}% done</p>`;
         },
         error => {
           console.error("❌ Upload error:", error);
@@ -94,8 +96,8 @@
         () => {
           uploadTask.snapshot.ref.getDownloadURL().then(downloadURL => {
             console.log("File available at", downloadURL);
-            document.getElementById("upload-status").innerText =
-              "✅ Upload complete! Waiting for Cloud Function to process EXIF data.";
+            document.getElementById("upload-status").innerHTML =
+              `<p>✅ Upload complete! Waiting for Cloud Function to process EXIF data.</p>`;
 
             // Start polling for metadata based on the processed file name.
             pollForMetadata(downloadURL);
@@ -127,7 +129,6 @@
       console.log("DEBUG: Polling for metadata with processed URL:", processedDownloadURL);
 
       const intervalId = setInterval(() => {
-        // IMPORTANT: Poll pending photos, not approved photos.
         fetch(`${API_BASE_URL}/api/pending-photos`)
           .then(response => response.json())
           .then(photos => {
@@ -138,6 +139,8 @@
               showMetadataForm(photo, photo.image_filename);
               clearInterval(intervalId);
               console.log("Metadata found:", photo);
+              // Clear the pending message once metadata is available.
+              document.getElementById("upload-status").innerHTML = "";
             }
           })
           .catch(error => {
@@ -176,5 +179,4 @@
     }
   </script>
 </body>
-
 </html>

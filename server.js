@@ -49,6 +49,16 @@ app.get('/admin', (req, res) => {
     res.sendFile(path.join(__dirname, 'public', 'admin.html'));
 });
 
+// Serve the upload page at /upload
+app.get('/upload', (req, res) => {
+    res.sendFile(path.join(__dirname, 'public', 'upload.html'));
+  });
+  
+  // Serve the approval page at /approval
+  app.get('/approval', (req, res) => {
+    res.sendFile(path.join(__dirname, 'public', 'approval.html'));
+  });  
+
 // Remove redundant express.static(FRONTEND_DIR)
 app.use('/api', (req, res, next) => {
     next(); // Allow API routes to be handled first

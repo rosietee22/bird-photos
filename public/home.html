@@ -1,85 +1,98 @@
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Bird Photos</title>
-    <link rel="stylesheet" href="styles.css">
-    <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&display=swap" rel="stylesheet">
-    <link rel="icon" type="image/png" href="assets/favicon.png"> 
-    <!-- Open Graph meta tags for link previews -->
-    <meta property="og:title" content="Bird Pictures">
-    <meta property="og:description" content="A log of bird sightings around towns">
-    <meta property="og:image" content="https://firebasestorage.googleapis.com/v0/b/bird-pictures-953b0.firebasestorage.app/o/bird3.jpg?alt=media">
-    <meta property="og:url" content="https://birdpics.pics">
-    <meta property="og:type" content="website">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Bird Photos</title>
+  <link rel="stylesheet" href="styles.css">
+  <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&display=swap" rel="stylesheet">
+  <link rel="icon" type="image/png" href="assets/favicon.png"> 
+  <!-- Open Graph meta tags for link previews -->
+  <meta property="og:title" content="Bird Pictures">
+  <meta property="og:description" content="A log of bird sightings around towns">
+  <meta property="og:image" content="https://firebasestorage.googleapis.com/v0/b/bird-pictures-953b0.firebasestorage.app/o/bird3.jpg?alt=media">
+  <meta property="og:url" content="https://birdpics.pics">
+  <meta property="og:type" content="website">
 </head>
 
 <body>
-    <img src="assets/logo2.png" alt="Bird Pictures Logo" class="logo">
-    <p>A log of bird sightings around towns</p>
+  <!-- Top-right lock-icon buttons -->
+  <div style="position: absolute; top: 10px; right: 10px;">
+    <!-- Upload Button -->
+    <a href="/upload" style="margin-right: 15px; text-decoration: none; color: inherit; font-size: 14px;">
+      <img src="assets/lock.png" alt="Lock Icon" style="width: 16px; vertical-align: middle; margin-right: 4px;">
+      Upload
+    </a>
+    <!-- Admin Button -->
+    <a href="/admin" style="text-decoration: none; color: inherit; font-size: 14px;">
+      <img src="assets/lock.png" alt="Lock Icon" style="width: 16px; vertical-align: middle; margin-right: 4px;">
+      Admin
+    </a>
+  </div>
 
-    <!-- 🔹 Species Filter Dropdown -->
-    <div class="filter-container">
-        <label for="species-filter">Filter by species:</label>
-        <select id="species-filter" onchange="filterPhotos()">
-            <option value="all">All Species</option>
-        </select>
-    </div>
+  <img src="assets/logo2.png" alt="Bird Pictures Logo" class="logo">
+  <p>A log of bird sightings around towns</p>
 
-    <div id="photo-gallery"></div>
+  <!-- 🔹 Species Filter Dropdown -->
+  <div class="filter-container">
+    <label for="species-filter">Filter by species:</label>
+    <select id="species-filter" onchange="filterPhotos()">
+      <option value="all">All Species</option>
+    </select>
+  </div>
 
-    <a style="color: aliceblue;" href="/admin">Admin Area</a>
-    <script src="script.js"></script>
-    <script>
-        let allPhotos = [];
+  <div id="photo-gallery"></div>
 
-        function fetchPhotos() {
-            fetch("/api/photos")  // ✅ Using the formatted date API
-                .then(response => response.json())
-                .then(photos => {
-                    allPhotos = photos;
-                    populateSpeciesFilter(photos);
-                    displayPhotos(photos);
-                })
-                .catch(error => console.error("❌ Error fetching photos:", error)); // Improved error message
+  <!-- Removed the old "Admin Area" link -->
+  <!-- <a style="color: aliceblue;" href="/admin">Admin Area</a> -->
+
+  <script src="script.js"></script>
+  <script>
+    let allPhotos = [];
+
+    function fetchPhotos() {
+      fetch("/api/photos")  // ✅ Using the formatted date API
+        .then(response => response.json())
+        .then(photos => {
+          allPhotos = photos;
+          populateSpeciesFilter(photos);
+          displayPhotos(photos);
+        })
+        .catch(error => console.error("❌ Error fetching photos:", error));
+    }
+
+    function populateSpeciesFilter(photos) {
+      const filterDropdown = document.getElementById("species-filter");
+      filterDropdown.innerHTML = `<option value="all">All Species</option>`;
+
+      const uniqueSpecies = new Set();
+      photos.forEach(photo => {
+        if (photo.species_names) {
+          photo.species_names.split(", ").forEach(species => uniqueSpecies.add(species));
         }
+      });
 
-        function populateSpeciesFilter(photos) {
-            const filterDropdown = document.getElementById("species-filter");
-            filterDropdown.innerHTML = `<option value="all">All Species</option>`;
+      uniqueSpecies.forEach(species => {
+        const option = document.createElement("option");
+        option.value = species;
+        option.textContent = species;
+        filterDropdown.appendChild(option);
+      });
+    }
 
-            const uniqueSpecies = new Set();
-            photos.forEach(photo => {
-                if (photo.species_names) {
-                    photo.species_names.split(", ").forEach(species => uniqueSpecies.add(species));
-                }
-            });
+    function filterPhotos() {
+      const selectedSpecies = document.getElementById("species-filter").value;
+      if (selectedSpecies === "all") {
+        displayPhotos(allPhotos);
+      } else {
+        const filteredPhotos = allPhotos.filter(photo =>
+          photo.species_names && photo.species_names.includes(selectedSpecies)
+        );
+        displayPhotos(filteredPhotos);
+      }
+    }
 
-            uniqueSpecies.forEach(species => {
-                const option = document.createElement("option");
-                option.value = species;
-                option.textContent = species;
-                filterDropdown.appendChild(option);
-            });
-        }
-
-        function filterPhotos() {
-            const selectedSpecies = document.getElementById("species-filter").value;
-            if (selectedSpecies === "all") {
-                displayPhotos(allPhotos);
-            } else {
-                const filteredPhotos = allPhotos.filter(photo =>
-                    photo.species_names && photo.species_names.includes(selectedSpecies)
-                );
-                displayPhotos(filteredPhotos);
-            }
-        }
-
-
-        document.addEventListener("DOMContentLoaded", fetchPhotos);
-    </script>
+    document.addEventListener("DOMContentLoaded", fetchPhotos);
+  </script>
 </body>
-
 </html>
