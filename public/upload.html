@@ -97,25 +97,6 @@
             document.getElementById("upload-status").innerText =
               "✅ Upload complete! Waiting for Cloud Function to process EXIF data.";
 
-            // The front-end call to /api/add-photo is now commented out.
-            /*
-            fetch('/api/add-photo', {
-              method: 'POST',
-              headers: {'Content-Type': 'application/json'},
-              body: JSON.stringify({ image_url: downloadURL })
-            })
-            .then(res => res.json())
-            .then(data => {
-              currentPhotoId = data.photo_id;
-              document.getElementById("upload-status").innerText = `✅ Upload complete! Photo ID: ${data.photo_id}`;
-              showMetadataForm(data, downloadURL);
-            })
-            .catch(error => {
-              console.error("Error sending metadata:", error);
-              alert("Error sending metadata.");
-            });
-            */
-
             // Start polling for metadata based on the processed file name.
             pollForMetadata(downloadURL);
           }).catch(error => {
@@ -128,10 +109,10 @@
 
     // Poll the backend until the Cloud Function has processed the image and metadata is available.
     function pollForMetadata(originalDownloadURL) {
-      // Remove token parameter if present from the original URL.
+      // Remove token parameter if present
       let urlWithoutToken = originalDownloadURL.split('&token=')[0];
 
-      // Split the URL at the '?' to separate the path from query parameters.
+      // Split URL into path and query parts
       const altIndex = urlWithoutToken.indexOf('?');
       let pathPart = urlWithoutToken.substring(0, altIndex); // e.g. .../pending_approval/PXL_20250311_155518805.jpg
       let queryPart = urlWithoutToken.substring(altIndex);   // e.g. ?alt=media
@@ -142,12 +123,12 @@
         ? pathPart.substring(0, lastDotIndex) + '_p' + pathPart.substring(lastDotIndex)
         : pathPart + '_p';
 
-      // Reconstruct the processed URL.
       const processedDownloadURL = processedPathPart + queryPart;
       console.log("DEBUG: Polling for metadata with processed URL:", processedDownloadURL);
 
       const intervalId = setInterval(() => {
-        fetch(`${API_BASE_URL}/api/photos`)
+        // IMPORTANT: Poll pending photos, not approved photos.
+        fetch(`${API_BASE_URL}/api/pending-photos`)
           .then(response => response.json())
           .then(photos => {
             // Look for a record with a matching image_filename (processed URL)
