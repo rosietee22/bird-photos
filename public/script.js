@@ -118,7 +118,29 @@ function displayPhotos(photos) {
     });
 }
 
-
+function deletePhoto(photoId) {
+    if (confirm("Are you sure you want to delete this photo?")) {
+      fetch(`${API_BASE_URL}/api/delete-photo`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ photo_id: photoId })
+      })
+        .then(response => response.json())
+        .then(data => {
+          alert("Photo deleted successfully.");
+          // Remove the photo card from the DOM
+          const photoCard = document.getElementById(`bird-card-${photoId}`) || document.getElementById(`photo-${photoId}`);
+          if (photoCard) {
+            photoCard.remove();
+          }
+        })
+        .catch(error => {
+          console.error("Error deleting photo:", error);
+          alert("Error deleting photo.");
+        });
+    }
+  }
+  
 
 // 🔹 Function to Edit Photographer Name
 function editPhotographer(photoId) {

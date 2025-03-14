@@ -446,6 +446,23 @@ app.post('/api/approve-photo', (req, res) => {
     });
 });
 
+app.post('/api/delete-photo', (req, res) => {
+    const { photo_id } = req.body;
+    if (!photo_id) {
+      return res.status(400).json({ error: "Missing photo_id" });
+    }
+    
+    const query = `DELETE FROM bird_photos WHERE id = ?`;
+    db.run(query, [photo_id], function(err) {
+      if (err) {
+        console.error("❌ Error deleting photo:", err.message);
+        return res.status(500).json({ error: "Failed to delete photo" });
+      }
+      console.log(`✅ Photo ${photo_id} deleted from database.`);
+      res.json({ message: "Photo deleted", photo_id });
+    });
+  });
+  
 
 // ✅ Helper function to link species to photo (supports multiple species per image)
 function linkSpeciesToPhoto(photo_id, species_id, res) {

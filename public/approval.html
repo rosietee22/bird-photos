@@ -1,4 +1,3 @@
-<!-- approval.html -->
 <!DOCTYPE html>
 <html lang="en">
 
@@ -59,8 +58,6 @@
         // Construct image URL if needed
         let finalImageUrl = photo.image_filename;
         if (!finalImageUrl || !finalImageUrl.startsWith("http")) {
-          // If the DB only has a short path like 'pending_approval/IMG_0161.jpg'
-          // then encode it + prefix with the correct domain
           const encodedPath = encodeURIComponent(finalImageUrl || "");
           finalImageUrl = `https://firebasestorage.googleapis.com/v0/b/bird-pictures-953b0.firebasestorage.app/o/${encodedPath}?alt=media`;
         }
@@ -74,21 +71,20 @@
             ? photo.photographer
             : "Unknown";
 
-        // Build the card's HTML
+        // Build the card's HTML including Approve and Delete buttons
         let cardContent = `
             <div class="photo-info">${dateLocation}</div>
             <img src="${finalImageUrl}" alt="Bird Photo" loading="lazy">
             ${speciesText}
             <p><strong>Photographer:</strong> ${photographerName}</p>
             <button onclick="approvePhoto(${photo.id})">Approve</button>
+            <button onclick="deletePhoto(${photo.id})">Delete</button>
         `;
 
-        // Insert into the DOM
         photoCard.innerHTML = cardContent;
         gallery.appendChild(photoCard);
       });
     }
-
 
     function approvePhoto(photoId) {
       fetch(`${API_BASE_URL}/api/approve-photo`, {

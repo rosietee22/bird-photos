@@ -1,32 +1,73 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Admin - Bird Photos</title>
-    <link rel="stylesheet" href="styles.css">
-    <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&display=swap" rel="stylesheet">
-    <link rel="icon" type="image/png" href="assets/favicon.png"> 
-    <!-- Open Graph meta tags for link previews -->
-    <meta property="og:title" content="Admin - Bird Pictures">
-    <meta property="og:description" content="A log of bird sightings around towns">
-    <meta property="og:image" content="https://firebasestorage.googleapis.com/v0/b/bird-pictures-953b0.firebasestorage.app/o/bird3.jpg?alt=media">
-    <meta property="og:url" content="https://birdpics.pics">
-    <meta property="og:type" content="website">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Admin - Bird Photos</title>
+  <link rel="stylesheet" href="styles.css">
+  <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&display=swap" rel="stylesheet">
+  <link rel="icon" type="image/png" href="assets/favicon.png">
+  <!-- Open Graph meta tags for link previews -->
+  <meta property="og:title" content="Admin - Bird Pictures">
+  <meta property="og:description" content="A log of bird sightings around towns">
+  <meta property="og:image" content="https://firebasestorage.googleapis.com/v0/b/bird-pictures-953b0.firebasestorage.app/o/bird3.jpg?alt=media">
+  <meta property="og:url" content="https://birdpics.pics">
+  <meta property="og:type" content="website">
 </head>
 <body>
-    <a href="/home"><img src="assets/logo2.png" alt="Bird Pictures Logo" class="logo"></a>
-    <p>Admin area PRIVATE</p>
+  <a href="/home"><img src="assets/logo2.png" alt="Bird Pictures Logo" class="logo"></a>
+  <p>Admin area PRIVATE</p>
 
-    <div class="filter-container">
-        <label for="species-filter">Filter by species:</label>
-        <select id="species-filter" onchange="filterPhotos()">
-            <option value="all">All Species</option>
-        </select>
-    </div>
+  <div class="filter-container">
+    <label for="species-filter">Filter by species:</label>
+    <select id="species-filter" onchange="filterPhotos()">
+      <option value="all">All Species</option>
+    </select>
+  </div>
 
-    <div id="photo-gallery"></div>
+  <div id="photo-gallery"></div>
 
-    <script src="script.js"></script>
+  <script src="script.js"></script>
+  <script>
+    // Assuming that script.js loads the functions:
+    // fetchPhotos(), displayPhotos(), filterPhotos(), and deletePhoto().
+
+    // Optionally, if you need to fetch photos when the page loads:
+    document.addEventListener("DOMContentLoaded", fetchPhotos);
+    
+    // In displayPhotos() in script.js, ensure the photo card includes a delete button.
+    // For example, in script.js, update the admin section of displayPhotos() like so:
+    //
+    // if (isAdminPage) {
+    //   cardContent += `
+    //       <div class="species-edit">
+    //           <input type="text" id="species-${photo.id}" placeholder="Add Species" onkeyup="fetchSpeciesSuggestions(${photo.id})">
+    //           <div id="species-dropdown-${photo.id}" class="species-dropdown"></div>
+    //           <button onclick="updateSpecies(${photo.id})">Add Species</button>
+    //       </div>
+    //
+    //       <div id="location-container-${photo.id}">
+    //           <p id="location-text-${photo.id}" class="location-text">
+    //               <strong>Location:</strong> ${formattedLocation} 
+    //               <button onclick="editLocation(${photo.id})">Edit</button>
+    //           </p>
+    //           <input type="text" id="location-input-${photo.id}" placeholder="Edit Location" style="display:none;">
+    //           <button id="update-location-${photo.id}" onclick="updateLocation(${photo.id})" style="display:none;">Update Location</button>
+    //       </div>
+    //
+    //       <div id="photographer-container-${photo.id}">
+    //           <p id="photographer-text-${photo.id}" class="photographer-text">
+    //               <strong>User:</strong> <span id="photographer-name-${photo.id}">${photographerName}</span>
+    //               <button onclick="editPhotographer(${photo.id})">Edit</button>
+    //           </p>
+    //           <input type="text" id="photographer-input-${photo.id}" placeholder="Enter Photographer" style="display:none;">
+    //           <button id="update-photographer-${photo.id}" onclick="updatePhotographer(${photo.id})" style="display:none;">Update Photographer</button>
+    //       </div>
+    //
+    //       <button onclick="approvePhoto(${photo.id})">Approve</button>
+    //       <button onclick="deletePhoto(${photo.id})">Delete</button>
+    //   `;
+    // }
+  </script>
 </body>
 </html>
