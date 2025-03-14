@@ -50,7 +50,7 @@
   </div>
 
   <script>
-    // Define the API base URL used in polling
+    // Define API base URL for polling
     const API_BASE_URL = "https://birdpics.pics";
 
     const firebaseConfig = {
@@ -97,7 +97,7 @@
             document.getElementById("upload-status").innerText =
               "✅ Upload complete! Waiting for Cloud Function to process EXIF data.";
 
-            // Front-end /api/add-photo call is commented out:
+            // Commented out front-end call:
             /*
             fetch('/api/add-photo', {
               method: 'POST',
@@ -116,7 +116,7 @@
             });
             */
 
-            // Start polling for metadata based on the processed file name
+            // Start polling for metadata based on the processed file name.
             pollForMetadata(downloadURL);
           }).catch(error => {
             console.error("Error retrieving URL:", error);
@@ -130,23 +130,26 @@
     function pollForMetadata(originalDownloadURL) {
       // Parse the original URL
       const urlObj = new URL(originalDownloadURL);
-      // Get the original file name from the pathname (decode it first)
+      // Remove the token parameter if present
+      urlObj.searchParams.delete("token");
+      const searchWithoutToken = urlObj.search; // This should now be ?alt=media
+
+      // Get the original file name from the pathname and decode it
       const pathParts = urlObj.pathname.split('/');
       const originalFileNameEncoded = pathParts[pathParts.length - 1];
-      const originalFileName = decodeURIComponent(originalFileNameEncoded); // e.g. "PXL_20250311_155456991.jpg"
+      const originalFileName = decodeURIComponent(originalFileNameEncoded); // e.g., "PXL_20250311_155518805.jpg"
 
       // Insert "_p" before the file extension
       const dotIndex = originalFileName.lastIndexOf('.');
       const processedFileName = dotIndex !== -1 
           ? originalFileName.substring(0, dotIndex) + '_p' + originalFileName.substring(dotIndex)
           : originalFileName + '_p';
-      
-      // Rebuild the URL with the processed file name
-      // Replace the last segment of the pathname with the new encoded file name (encode only once)
+
+      // Replace the last segment of the pathname with the processed file name (encode it only once)
       pathParts[pathParts.length - 1] = encodeURIComponent(processedFileName);
       const newPathname = pathParts.join('/');
-      const processedDownloadURL = urlObj.origin + newPathname + urlObj.search;
-      
+      const processedDownloadURL = urlObj.origin + newPathname + searchWithoutToken;
+
       console.log("DEBUG: Polling for metadata with processed URL:", processedDownloadURL);
 
       const intervalId = setInterval(() => {
