@@ -16,6 +16,13 @@
 </head>
 <body>
   <a href="/home"><img src="assets/logo2.png" alt="Bird Pictures Logo" class="logo"></a>
+  <script>
+    const password = prompt("Please enter the upload password:");
+    if (password !== "wildlife") {
+      alert("Incorrect password. Access denied.");
+      window.location.href = "home.html";
+    }
+  </script>
   <p>Admin area PRIVATE</p>
 
   <div class="filter-container">
