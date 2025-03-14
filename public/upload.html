@@ -90,6 +90,13 @@
         },
         () => {
           uploadTask.snapshot.ref.getDownloadURL().then(downloadURL => {
+            // ✅ Instead of calling /api/add-photo here, just log or display a message:
+            console.log("File available at", downloadURL);
+            document.getElementById("upload-status").innerText =
+              "✅ Upload complete! Waiting for Cloud Function to process EXIF data.";
+
+            // ❌ The original code that created a DB record on the front-end is commented out:
+            /*
             fetch('/api/add-photo', {
               method: 'POST',
               headers: {'Content-Type': 'application/json'},
@@ -105,6 +112,7 @@
               console.error("Error sending metadata:", error);
               alert("Error sending metadata.");
             });
+            */
           }).catch(error => {
             console.error("Error retrieving URL:", error);
             alert("Error retrieving URL.");
