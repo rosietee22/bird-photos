@@ -50,6 +50,9 @@
   </div>
 
   <script>
+    // Define the API base URL used in polling
+    const API_BASE_URL = "https://birdpics.pics";
+
     const firebaseConfig = {
       apiKey: "AIzaSyDkLWluUOc_L0Mtj6MwedKDF27Rh-HqwrQ",
       authDomain: "bird-pictures-953b0.firebaseapp.com",
@@ -94,12 +97,12 @@
             document.getElementById("upload-status").innerText =
               "✅ Upload complete! Waiting for Cloud Function to process EXIF data.";
 
-            // Commenting out the front-end API call:
+            // Front-end /api/add-photo call is commented out:
             /*
             fetch('/api/add-photo', {
               method: 'POST',
               headers: {'Content-Type': 'application/json'},
-              body: JSON.stringify({image_url: downloadURL})
+              body: JSON.stringify({ image_url: downloadURL })
             })
             .then(res => res.json())
             .then(data => {
@@ -113,7 +116,7 @@
             });
             */
 
-            // Start polling for metadata (based on processed file name)
+            // Start polling for metadata based on the processed file name
             pollForMetadata(downloadURL);
           }).catch(error => {
             console.error("Error retrieving URL:", error);
@@ -125,21 +128,32 @@
 
     // Poll the backend until the Cloud Function has processed the image and metadata is available.
     function pollForMetadata(originalDownloadURL) {
-      // Compute the processed file name by inserting "_p" before the file extension.
-      const lastSlashIndex = originalDownloadURL.lastIndexOf('/');
-      const fileName = originalDownloadURL.substring(lastSlashIndex + 1); // e.g., PXL_20250311_155456991.jpg
-      const dotIndex = fileName.lastIndexOf('.');
-      const processedFileName = dotIndex !== -1 ? fileName.substring(0, dotIndex) + '_p' + fileName.substring(dotIndex) : fileName + '_p';
-      const baseUrl = originalDownloadURL.substring(0, lastSlashIndex + 1);
-      const processedDownloadURL = baseUrl + encodeURIComponent(processedFileName) + "?alt=media";
+      // Parse the original URL
+      const urlObj = new URL(originalDownloadURL);
+      // Get the original file name from the pathname (decode it first)
+      const pathParts = urlObj.pathname.split('/');
+      const originalFileNameEncoded = pathParts[pathParts.length - 1];
+      const originalFileName = decodeURIComponent(originalFileNameEncoded); // e.g. "PXL_20250311_155456991.jpg"
 
+      // Insert "_p" before the file extension
+      const dotIndex = originalFileName.lastIndexOf('.');
+      const processedFileName = dotIndex !== -1 
+          ? originalFileName.substring(0, dotIndex) + '_p' + originalFileName.substring(dotIndex)
+          : originalFileName + '_p';
+      
+      // Rebuild the URL with the processed file name
+      // Replace the last segment of the pathname with the new encoded file name (encode only once)
+      pathParts[pathParts.length - 1] = encodeURIComponent(processedFileName);
+      const newPathname = pathParts.join('/');
+      const processedDownloadURL = urlObj.origin + newPathname + urlObj.search;
+      
       console.log("DEBUG: Polling for metadata with processed URL:", processedDownloadURL);
 
       const intervalId = setInterval(() => {
         fetch(`${API_BASE_URL}/api/photos`)
           .then(response => response.json())
           .then(photos => {
-            // Look for the photo record that matches the processedDownloadURL
+            // Look for a record with a matching image_filename (processed URL)
             const photo = photos.find(p => p.image_filename === processedDownloadURL);
             if (photo && photo.date_taken && photo.date_taken !== "Unknown date") {
               currentPhotoId = photo.id;
