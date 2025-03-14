@@ -90,12 +90,11 @@
         },
         () => {
           uploadTask.snapshot.ref.getDownloadURL().then(downloadURL => {
-            // ✅ Instead of calling /api/add-photo here, just log or display a message:
             console.log("File available at", downloadURL);
             document.getElementById("upload-status").innerText =
               "✅ Upload complete! Waiting for Cloud Function to process EXIF data.";
 
-            // ❌ The original code that created a DB record on the front-end is commented out:
+            // Commenting out the front-end API call:
             /*
             fetch('/api/add-photo', {
               method: 'POST',
@@ -113,6 +112,9 @@
               alert("Error sending metadata.");
             });
             */
+
+            // Start polling for metadata (based on processed file name)
+            pollForMetadata(downloadURL);
           }).catch(error => {
             console.error("Error retrieving URL:", error);
             alert("Error retrieving URL.");
@@ -121,9 +123,40 @@
       );
     }
 
+    // Poll the backend until the Cloud Function has processed the image and metadata is available.
+    function pollForMetadata(originalDownloadURL) {
+      // Compute the processed file name by inserting "_p" before the file extension.
+      const lastSlashIndex = originalDownloadURL.lastIndexOf('/');
+      const fileName = originalDownloadURL.substring(lastSlashIndex + 1); // e.g., PXL_20250311_155456991.jpg
+      const dotIndex = fileName.lastIndexOf('.');
+      const processedFileName = dotIndex !== -1 ? fileName.substring(0, dotIndex) + '_p' + fileName.substring(dotIndex) : fileName + '_p';
+      const baseUrl = originalDownloadURL.substring(0, lastSlashIndex + 1);
+      const processedDownloadURL = baseUrl + encodeURIComponent(processedFileName) + "?alt=media";
+
+      console.log("DEBUG: Polling for metadata with processed URL:", processedDownloadURL);
+
+      const intervalId = setInterval(() => {
+        fetch(`${API_BASE_URL}/api/photos`)
+          .then(response => response.json())
+          .then(photos => {
+            // Look for the photo record that matches the processedDownloadURL
+            const photo = photos.find(p => p.image_filename === processedDownloadURL);
+            if (photo && photo.date_taken && photo.date_taken !== "Unknown date") {
+              currentPhotoId = photo.id;
+              showMetadataForm(photo, photo.image_filename);
+              clearInterval(intervalId);
+              console.log("Metadata found:", photo);
+            }
+          })
+          .catch(error => {
+            console.error("Error polling for metadata:", error);
+          });
+      }, 3000); // Poll every 3 seconds
+    }
+
     function showMetadataForm(data, imageUrl) {
       document.getElementById('photo-preview').src = imageUrl;
-      document.getElementById('date_taken').value = data.date_taken ? data.date_taken.substring(0,10) : '';
+      document.getElementById('date_taken').value = data.date_taken ? data.date_taken.substring(0, 10) : '';
       document.getElementById('location').value = data.location || '';
       document.getElementById('photographer').value = data.photographer || '';
       document.getElementById('metadata-form').style.display = 'block';
@@ -136,18 +169,18 @@
 
       fetch('/api/update-photo-details', {
         method: 'POST',
-        headers: {'Content-Type': 'application/json'},
-        body: JSON.stringify({photo_id: currentPhotoId, date_taken, location, photographer})
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ photo_id: currentPhotoId, date_taken, location, photographer })
       })
-      .then(res => res.json())
-      .then(response => {
-        alert("✅ Details saved successfully!");
-        document.getElementById('metadata-form').style.display = 'none';
-      })
-      .catch(error => {
-        console.error("Error updating metadata:", error);
-        alert("Error updating metadata.");
-      });
+        .then(res => res.json())
+        .then(response => {
+          alert("✅ Details saved successfully!");
+          document.getElementById('metadata-form').style.display = 'none';
+        })
+        .catch(error => {
+          console.error("Error updating metadata:", error);
+          alert("Error updating metadata.");
+        });
     }
   </script>
 </body>
