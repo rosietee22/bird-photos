@@ -15,6 +15,7 @@
   <meta property="og:type" content="website">
 </head>
 <body>
+  
   <a href="/home"><img src="assets/logo2.png" alt="Bird Pictures Logo" class="logo"></a>
   <script>
     const password = prompt("Please enter the upload password:");
@@ -23,6 +24,15 @@
       window.location.href = "home.html";
     }
   </script>
+
+   <!-- Top-right lock-icon buttons -->
+   <div style="position: absolute; top: 10px; right: 10px;">
+    <!-- Approval Button -->
+    <a href="/approval" style="margin-left: 15px; border: 1px solid #000; text-decoration: none; color: inherit; font-size: 14px;">
+      <img src="assets/lock.png" alt="Lock Icon" style="width: 16px; vertical-align: middle; margin-right: 4px;">
+      Approval
+    </a>
+  </div>
   <p>Admin area PRIVATE</p>
 
   <div class="filter-container">

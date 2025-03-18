@@ -5,8 +5,22 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Photo Approval - Bird Pictures</title>
   <link rel="stylesheet" href="styles.css">
+  <link rel="icon" type="image/png" href="assets/favicon.png"> 
 </head>
 <body>
+   <!-- Top-right lock-icon buttons -->
+   <div style="position: absolute; top: 10px; right: 10px;">
+    <!-- Upload Button -->
+    <a href="/upload" style="margin-right: 15px; border: 1px solid #000; text-decoration: none; color: inherit; font-size: 14px;">
+      <img src="assets/lock.png" alt="Lock Icon" style="width: 16px; vertical-align: middle; margin-right: 4px;">
+      Upload
+    </a>
+    <!-- Admin Button -->
+    <a href="/admin" style="margin-left: 15px; border: 1px solid #000; text-decoration: none; color: inherit; font-size: 14px;">
+      <img src="assets/lock.png" alt="Lock Icon" style="width: 16px; vertical-align: middle; margin-right: 4px;">
+      Admin
+    </a>
+  </div>
   <a href="/home"><img src="assets/logo2.png" alt="Bird Pictures Logo" class="logo"></a>
   <p>Photo Approval</p>
   <div id="photo-gallery"></div>
