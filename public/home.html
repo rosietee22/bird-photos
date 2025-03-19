@@ -6,52 +6,52 @@
   <title>Bird Photos</title>
   <link rel="stylesheet" href="styles.css">
   <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&display=swap" rel="stylesheet">
-  <link rel="icon" type="image/png" href="assets/favicon.png"> 
-  <!-- Open Graph meta tags for link previews -->
+  <link rel="icon" type="image/png" href="assets/favicon.png">
+  <!-- Open Graph meta tags -->
   <meta property="og:title" content="Bird Pictures">
   <meta property="og:description" content="A log of bird sightings around towns">
   <meta property="og:image" content="https://firebasestorage.googleapis.com/v0/b/bird-pictures-953b0.firebasestorage.app/o/bird3.jpg?alt=media">
   <meta property="og:url" content="https://birdpics.pics">
   <meta property="og:type" content="website">
 </head>
-
 <body>
-  <!-- Top-right lock-icon buttons -->
-  <div style="position: absolute; top: 10px; right: 10px;">
-    <!-- Upload Button -->
-    <a href="/upload" style="margin-right: 15px; border: 1px solid #000; text-decoration: none; color: inherit; font-size: 14px;">
-      <img src="assets/lock.png" alt="Lock Icon" style="width: 16px; vertical-align: middle; margin-right: 4px;">
-      Upload
-    </a>
-    <!-- Admin Button -->
-    <a href="/admin" style="margin-left: 15px; border: 1px solid #000; text-decoration: none; color: inherit; font-size: 14px;">
-      <img src="assets/lock.png" alt="Lock Icon" style="width: 16px; vertical-align: middle; margin-right: 4px;">
-      Admin
-    </a>
-  </div>
+  <!-- Header (common for desktop and mobile) -->
+  <header class="site-header">
+    <div class="header-logo">
+      <img src="assets/logo2.png" alt="Bird Pictures Logo" class="logo">
+    </div>
+    <nav class="header-nav">
+      <a href="/upload" class="top-button">
+        <img src="assets/lock.png" alt="Lock Icon">
+        Upload
+      </a>
+      <a href="/admin" class="top-button">
+        <img src="assets/lock.png" alt="Lock Icon">
+        Admin
+      </a>
+    </nav>
+  </header>
 
-  <img src="assets/logo2.png" alt="Bird Pictures Logo" class="logo">
-  <p>A log of bird sightings around towns</p>
-
-  <!-- 🔹 Species Filter Dropdown -->
-  <div class="filter-container">
-    <label for="species-filter">Filter by species:</label>
-    <select id="species-filter" onchange="filterPhotos()">
-      <option value="all">All Species</option>
-    </select>
-  </div>
-
-  <div id="photo-gallery"></div>
-
-  <!-- Removed the old "Admin Area" link -->
-  <!-- <a style="color: aliceblue;" href="/admin">Admin Area</a> -->
+  <!-- Main content -->
+  <main>
+    <p>A log of bird sightings around towns</p>
+    <!-- Species Filter Dropdown -->
+    <div class="filter-container">
+      <label for="species-filter">Filter by species:</label>
+      <select id="species-filter" onchange="filterPhotos()">
+        <option value="all">All Species</option>
+      </select>
+    </div>
+    <div id="photo-gallery"></div>
+  </main>
 
   <script src="script.js"></script>
   <script>
+    // Desktop/mobile fetchPhotos code remains unchanged
     let allPhotos = [];
 
     function fetchPhotos() {
-      fetch("/api/photos")  // ✅ Using the formatted date API
+      fetch("/api/photos")
         .then(response => response.json())
         .then(photos => {
           allPhotos = photos;
@@ -64,14 +64,12 @@
     function populateSpeciesFilter(photos) {
       const filterDropdown = document.getElementById("species-filter");
       filterDropdown.innerHTML = `<option value="all">All Species</option>`;
-
       const uniqueSpecies = new Set();
       photos.forEach(photo => {
         if (photo.species_names) {
           photo.species_names.split(", ").forEach(species => uniqueSpecies.add(species));
         }
       });
-
       uniqueSpecies.forEach(species => {
         const option = document.createElement("option");
         option.value = species;
@@ -93,6 +91,20 @@
     }
 
     document.addEventListener("DOMContentLoaded", fetchPhotos);
+
+    // Sticky header on mobile only when scrolled
+    document.addEventListener("DOMContentLoaded", () => {
+      const header = document.querySelector(".site-header");
+      window.addEventListener("scroll", () => {
+        if (window.innerWidth <= 600) { // only on mobile
+          if (window.scrollY > 50) {
+            header.classList.add("sticky");
+          } else {
+            header.classList.remove("sticky");
+          }
+        }
+      });
+    });
   </script>
 </body>
 </html>

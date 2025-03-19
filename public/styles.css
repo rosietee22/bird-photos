@@ -5,6 +5,87 @@ body {
     text-align: center;
 }
 
+/* --- Default (Desktop and Mobile Landing) Header Styles --- */
+.site-header {
+    position: relative;
+    padding: 10px 20px;
+    text-align: center;
+    box-shadow: none;
+  }
+  
+  .header-logo {
+    text-align: center;
+  }
+  
+  .header-logo img.logo {
+    width: 180px;
+    transition: width 0.3s ease;
+    display: inline-block;
+  }
+  
+  /* Desktop nav: absolutely positioned at top right */
+  .header-nav {
+    position: absolute;
+    top: 20px;
+    right: 10px;
+  }
+  
+  .header-nav a.top-button {
+    margin-left: 5px;
+    border: 1px solid #000;
+    text-decoration: none;
+    color: inherit;
+    font-size: 14px;
+    padding: 4px 8px;
+    display: inline-block;
+    vertical-align: middle;
+  }
+  
+  .header-nav a.top-button img {
+    width: 16px;
+    vertical-align: middle;
+    margin-right: 4px;
+  }
+  
+  /* --- Mobile Sticky Header Styles (applied when .sticky is added) --- */
+  @media (max-width: 600px) {
+    .site-header.sticky {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      background-color: #fff;
+      padding: 5px 10px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      text-align: left;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+      z-index: 100;
+    }
+    .site-header.sticky .header-logo {
+      flex: 1;
+      text-align: left;
+    }
+    .site-header.sticky .header-logo img.logo {
+      width: 100px;  /* Smaller logo in sticky mode */
+      margin: 0;
+    }
+    .site-header.sticky .header-nav {
+      position: static;
+    }
+    .site-header.sticky .header-nav a.top-button {
+      font-size: 12px;
+      padding: 3px 6px;
+      margin-left: 5px;
+    }
+  }
+  
+  /* Ensure main content is not hidden behind sticky header on mobile */
+  main {
+    padding-top: 0px;
+  }
+
 .index-page {
     min-height: 100vh;
     display: flex;
@@ -29,11 +110,11 @@ header {
 }
 
 .logo {
-    width: 200px; /* Adjust size as needed */
+    width: 180px; /* Adjust size as needed */
     height: auto;
     display: block;
     margin: 0 auto;
-    padding-top: 40px;
+    padding-top: 55px;
     padding-bottom: 10px;
 }
 
@@ -68,6 +149,17 @@ a {
     color: #000;
 }
 
+.top-button {
+    margin-left: 15px;
+    border: 1px solid #000;
+    text-decoration: none;
+    color: inherit;
+    font-size: 14px;
+    padding: 4px 4px;
+    display: inline-block;
+    vertical-align: middle;
+  }
+  
 
 /* 🔹 Updated Species Filter Styling */
 .filter-container {
