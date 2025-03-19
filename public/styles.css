@@ -1,5 +1,12 @@
+@font-face {
+    font-family: 'ABCDailySlabMonoLight';
+    src: url('fonts/ABCDailySlabMono-Light.woff') format('woff');
+    font-weight: normal;
+    font-style: normal;
+  }
+  
 body {
-    font-family: serif;
+    font-family: 'ABCDailySlabMonoLight', serif;
     background-color: #f7f7f7;
     margin: 0;
     text-align: center;
@@ -35,7 +42,7 @@ body {
     border: 1px solid #000;
     text-decoration: none;
     color: inherit;
-    font-size: 14px;
+    font-size: 12px;
     padding: 4px 8px;
     display: inline-block;
     vertical-align: middle;
@@ -54,7 +61,7 @@ body {
       top: 0;
       left: 0;
       right: 0;
-      background-color: #fff;
+      background-color: #f7f7f7;
       padding: 5px 10px;
       display: flex;
       align-items: center;
@@ -70,6 +77,7 @@ body {
     .site-header.sticky .header-logo img.logo {
       width: 100px;  /* Smaller logo in sticky mode */
       margin: 0;
+      padding-top: 10px;
     }
     .site-header.sticky .header-nav {
       position: static;
@@ -124,7 +132,7 @@ header {
 
 p,
 a {
-    font-size: 16px;
+    font-size: 12px;
     color: #000000;
 }
 
@@ -138,7 +146,7 @@ a {
     background-color: #f7f7f7;
     color: #000000;
     text-decoration: none;
-    font-size: 16px;
+    font-size: 12px;
     border: 2px solid #000000;
     transition: 0.3s;
     margin-bottom: 20px;
@@ -150,11 +158,12 @@ a {
 }
 
 .top-button {
+    font-family: inherit;
     margin-left: 15px;
     border: 1px solid #000;
     text-decoration: none;
     color: inherit;
-    font-size: 14px;
+    font-size: 12px;
     padding: 4px 4px;
     display: inline-block;
     vertical-align: middle;
@@ -180,7 +189,7 @@ a {
     cursor: pointer;
     transition: all 0.2s ease-in-out;
     font-family: 'Tiempos Text Web', serif !important; /* Force correct font */
-    font-size: 14px !important; /* Set a fixed font size */
+    font-size: 12px !important; /* Set a fixed font size */
     color: black !important; /* Ensures text color remains black */
     text-align: left; /* Align text properly */
 }
@@ -292,7 +301,7 @@ a {
     top: 0;
     left: 0;
     padding: 10px;
-    font-size: 16px;
+    font-size: 12px;
     text-align: center;
     max-width: 100%;
     font-style: italic;
@@ -309,13 +318,13 @@ a {
     display: inline-block;
     padding: 3px 6px;
     border: 1px solid black;
-    font-size: 16px;
+    font-size: 12px;
     margin: 2px;
 }
 
 .remove-species {
     cursor: pointer;
-    font-size: 14px;
+    font-size: 12px;
     margin-left: 5px;
     color: black;
 }
@@ -335,7 +344,7 @@ a {
     padding: 5px;
     flex: 1;
     border: 1px solid black;
-    font-size: 16px;
+    font-size: 12px;
     font-family: "Times New Roman", serif;
 }
 
@@ -345,7 +354,7 @@ a {
     color: white;
     border: none;
     cursor: pointer;
-    font-size: 16px;
+    font-size: 12px;
     font-family: "Times New Roman", serif;
 }
 
@@ -404,7 +413,7 @@ a {
     z-index: 10;
     box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
     font-family: 'Tiempos Text Web', serif;
-    font-size: 14px;
+    font-size: 12px;
 }
 
 
