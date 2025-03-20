@@ -36,6 +36,16 @@ const db = new sqlite3.Database(dbPath, (err) => {
     }
 });
 
+const admin = require('firebase-admin');
+
+admin.initializeApp({
+  // ...
+  storageBucket: 'bird-pictures-953b0.appspot.com'
+});
+
+const storage = admin.storage().bucket();
+
+
 // ✅ Serve static files from the public folder
 app.use(express.static(FRONTEND_DIR));
 
@@ -461,17 +471,52 @@ app.post('/api/delete-photo', (req, res) => {
     if (!photo_id) {
       return res.status(400).json({ error: "Missing photo_id" });
     }
-    
-    const query = `DELETE FROM bird_photos WHERE id = ?`;
-    db.run(query, [photo_id], function(err) {
+  
+    // 1) Fetch the photo's image_filename from the database
+    const selectQuery = `SELECT image_filename FROM bird_photos WHERE id = ?`;
+    db.get(selectQuery, [photo_id], (err, row) => {
       if (err) {
-        console.error("❌ Error deleting photo:", err.message);
-        return res.status(500).json({ error: "Failed to delete photo" });
+        console.error("❌ Error fetching photo record:", err);
+        return res.status(500).json({ error: "Error fetching photo record" });
       }
-      console.log(`✅ Photo ${photo_id} deleted from database.`);
-      res.json({ message: "Photo deleted", photo_id });
+      if (!row) {
+        return res.status(404).json({ error: "Photo record not found" });
+      }
+  
+      // e.g. https://firebasestorage.googleapis.com/v0/b/YOUR_BUCKET/o/pending_approval%2FmyPhoto.jpg?alt=media
+      const fileUrl = row.image_filename;
+      const matches = fileUrl.match(/.*\/o\/([^?]+)\?alt.*/);
+      let decodedPath = null;
+      if (matches && matches[1]) {
+        decodedPath = decodeURIComponent(matches[1]); // e.g. pending_approval/myPhoto.jpg
+      }
+  
+      // 2) Delete from the DB
+      const deleteQuery = `DELETE FROM bird_photos WHERE id = ?`;
+      db.run(deleteQuery, [photo_id], async function (err2) {
+        if (err2) {
+          console.error("❌ Error deleting photo from DB:", err2.message);
+          return res.status(500).json({ error: "Failed to delete photo from DB" });
+        }
+        console.log(`✅ Photo ${photo_id} deleted from database.`);
+  
+        // 3) If we found a valid path, remove the file from Firebase
+        if (decodedPath) {
+          try {
+            await storage.file(decodedPath).delete();
+            console.log(`✅ File "${decodedPath}" deleted from Firebase Storage.`);
+          } catch (err3) {
+            console.error("❌ Error deleting file from Firebase:", err3.message);
+            // Depending on your preference, you can return an error here or proceed.
+          }
+        }
+  
+        // 4) Respond success
+        return res.json({ message: "Photo deleted successfully", photo_id });
+      });
     });
   });
+  
   
 
 // ✅ Helper function to link species to photo (supports multiple species per image)
