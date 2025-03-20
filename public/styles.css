@@ -10,6 +10,9 @@ body {
     background-color: #f7f7f7;
     margin: 0;
     text-align: center;
+    min-height: 100vh;
+    padding-top: 0;
+    text-transform: uppercase;
 }
 
 /* --- Default (Desktop and Mobile Landing) Header Styles --- */
@@ -46,6 +49,7 @@ body {
     padding: 4px 8px;
     display: inline-block;
     vertical-align: middle;
+    text-transform: uppercase;
 }
 
 .header-nav a.top-button img {
@@ -53,6 +57,23 @@ body {
     vertical-align: middle;
     margin-right: 4px;
 }
+
+/* Fix for sticky header on short pages */
+@media (max-width: 600px) {
+    body {
+        /* Prevent content jump when header becomes fixed */
+        padding-top: 0;
+    }
+    
+    /* Add a transition for smoother sticky header appearance */
+    .site-header {
+        transition: all 0.2s ease;
+    }
+    
+    /* Ensure content doesn't jump when header becomes sticky */
+    body.has-sticky-header {
+        padding-top: 70px; /* Adjust to match your header height */
+    }}
 
 /* --- Mobile Sticky Header Styles (applied when .sticky is added) --- */
 @media (max-width: 600px) {
@@ -92,6 +113,7 @@ body {
         font-size: 13px;
         padding: 0px 6px;
         margin-left: 5px;
+        text-transform: uppercase;
     }
 }
 
@@ -99,6 +121,7 @@ body {
 main {
     padding-top: 0px;
 }
+
 
 .index-page {
     min-height: 100vh;
@@ -142,6 +165,7 @@ p,
 a {
     font-size: 13px;
     color: #000000;
+    text-transform: uppercase;
 }
 
 a {
@@ -150,6 +174,7 @@ a {
 
 label  {
     font-size: 13px;
+    text-transform: uppercase;
 }
 
 .button {
@@ -162,6 +187,7 @@ label  {
     border: 2px solid #000000;
     transition: 0.3s;
     margin-bottom: 20px;
+    text-transform: uppercase;
 }
 
 .button:hover {
@@ -179,6 +205,7 @@ label  {
     padding: 4px 4px;
     display: inline-block;
     vertical-align: middle;
+    text-transform: uppercase;
 }
 
 
@@ -202,7 +229,6 @@ label  {
     border-radius: 6px;
     cursor: pointer;
     transition: all 0.2s ease-in-out;
-    font-family: 'Tiempos Text Web', serif !important;
     /* Force correct font */
     font-size: 13px !important;
     /* Set a fixed font size */
@@ -210,6 +236,7 @@ label  {
     /* Ensures text color remains black */
     text-align: left;
     /* Align text properly */
+    text-transform: uppercase;
 }
 
 /* Dropdown hover effect */
@@ -254,6 +281,7 @@ label  {
 /* 🔹 Full-Width Responsive Image Grid */
 #photo-gallery {
     display: grid;
+    min-height: calc(100vh - 200px);
     grid-template-columns: repeat(3, 1fr);
     /* Always 3 columns */
     gap: 20px;
@@ -366,7 +394,6 @@ label  {
     flex: 1;
     border: 1px solid black;
     font-size: 13px;
-    font-family: "Times New Roman", serif;
 }
 
 .species-input-container button {
@@ -376,7 +403,6 @@ label  {
     border: none;
     cursor: pointer;
     font-size: 13px;
-    font-family: "Times New Roman", serif;
 }
 
 .species-input-container button:hover {
@@ -435,7 +461,6 @@ label  {
     width: 100%;
     z-index: 10;
     box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-    font-family: 'Tiempos Text Web', serif;
     font-size: 13px;
 }
 
@@ -467,6 +492,7 @@ label  {
 .upload-container h1 {
     font-size: 1.5em;
     margin-bottom: 20px;
+    text-transform: uppercase;
 }
 
 #file-input {
