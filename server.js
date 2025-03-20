@@ -6,6 +6,8 @@ const axios = require('axios');
 const fs = require('fs');
 const { exec } = require('child_process');
 const { format } = require('date-fns');
+const express = require('express');
+const session = require('express-session');
 
 const dbPath = '/persistent/birds.db';  // ✅ Ensure dbPath is set before use
 const FRONTEND_DIR = path.join(__dirname, 'public'); // ✅ Directory for frontend files
@@ -39,8 +41,8 @@ const db = new sqlite3.Database(dbPath, (err) => {
 const admin = require('firebase-admin');
 
 admin.initializeApp({
-  // ...
-  storageBucket: 'bird-pictures-953b0.appspot.com'
+    // ...
+    storageBucket: 'bird-pictures-953b0.appspot.com'
 });
 
 const storage = admin.storage().bucket();
@@ -55,24 +57,35 @@ app.get('/home', (req, res) => {
 });
 
 // ✅ Serve ".html" at "/admin" 
-app.get('/admin', (req, res) => {
+app.get('/admin', requireLogin, (req, res) => {
     res.sendFile(path.join(__dirname, 'public', 'admin.html'));
 });
 
 // Serve the upload page at /upload
-app.get('/upload', (req, res) => {
+app.get('/upload', requireLogin, (req, res) => {
     res.sendFile(path.join(__dirname, 'public', 'upload.html'));
-  });
-  
-  // Serve the approval page at /approval
-  app.get('/approval', (req, res) => {
+});
+
+// Serve the approval page at /approval
+app.get('/approval', requireLogin, (req, res) => {
     res.sendFile(path.join(__dirname, 'public', 'approval.html'));
-  });  
+});
 
 // Remove redundant express.static(FRONTEND_DIR)
 app.use('/api', (req, res, next) => {
     next(); // Allow API routes to be handled first
 });
+
+app.use(
+    session({
+        secret: process.env.SESSION_SECRET || 'SUPER_SECRET_KEY',
+        resave: false,
+        saveUninitialized: true,
+        cookie: {
+            maxAge: 1000 * 60 * 60 // 1 hour session
+        }
+    })
+);
 
 const IMAGES_FOLDER = path.join(__dirname, 'public/images');
 
@@ -104,6 +117,36 @@ db.serialize(() => {
         }
     });
 });
+
+// If user is already logged in, they shouldn't need to see the login form again.
+app.get('/login', (req, res) => {
+    if (req.session.loggedIn) {
+        return res.redirect('/admin');
+    }
+    // Send a very simple HTML form:
+    res.send(`
+      <h2>Login</h2>
+      <form method="POST" action="/login">
+        <label>Password: <input type="password" name="password" /></label>
+        <button type="submit">Login</button>
+      </form>
+    `);
+});
+
+// We'll parse form data, so ensure your Express config has:
+app.use(express.urlencoded({ extended: true }));
+
+app.post('/login', (req, res) => {
+    const { password } = req.body;
+    // Compare with your "ADMIN_PASSWORD" or a simple string
+    if (password === (process.env.ADMIN_PASSWORD || 'wildlife')) {
+        req.session.loggedIn = true;
+        return res.redirect('/admin'); // or /approval, whichever is main
+    }
+    // else:
+    res.send('Invalid password. <a href="/login">Try again</a>');
+});
+
 
 app.post('/api/update-photographer', (req, res) => {
     const { photo_id, photographer } = req.body;
@@ -397,59 +440,59 @@ app.get('/api/pending-photos', (req, res) => {
 
 app.post('/api/add-photo', (req, res) => {
     const { image_url, date_taken, location, latitude, longitude } = req.body;
-  
+
     if (!image_url) {
-      return res.status(400).json({ error: "Missing image_url" });
+        return res.status(400).json({ error: "Missing image_url" });
     }
-  
+
     const query = `
       INSERT INTO bird_photos (image_filename, date_taken, location, latitude, longitude, approved)
       VALUES (?, ?, ?, ?, ?, 0)
     `;
-  
-    db.run(query, [image_url, date_taken || null, location || "Unknown", latitude || null, longitude || null], function(err) {
-      if (err) {
-        console.error("❌ Error adding photo:", err.message);
-        return res.status(500).json({ error: "Failed to add photo" });
-      }
-  
-      // ✅ Return metadata clearly to frontend
-      res.json({
-        photo_id: this.lastID,
-        image_url,
-        date_taken,
-        location,
-        latitude,
-        longitude
-      });
+
+    db.run(query, [image_url, date_taken || null, location || "Unknown", latitude || null, longitude || null], function (err) {
+        if (err) {
+            console.error("❌ Error adding photo:", err.message);
+            return res.status(500).json({ error: "Failed to add photo" });
+        }
+
+        // ✅ Return metadata clearly to frontend
+        res.json({
+            photo_id: this.lastID,
+            image_url,
+            date_taken,
+            location,
+            latitude,
+            longitude
+        });
     });
-  });
-  
-  app.post('/api/update-photo-details', (req, res) => {
+});
+
+app.post('/api/update-photo-details', (req, res) => {
     const { photo_id, date_taken, location, photographer } = req.body;
-  
+
     if (!photo_id) {
-      return res.status(400).json({ error: "Missing photo_id" });
+        return res.status(400).json({ error: "Missing photo_id" });
     }
-  
+
     db.run(`
       UPDATE bird_photos SET
         date_taken = ?, 
         location = ?, 
         photographer = ?
       WHERE id = ?
-    `, [date_taken || null, location || 'Unknown', photographer || 'Unknown', photo_id], function(err) {
-      if (err) {
-        console.error("❌ Error updating photo details:", err.message);
-        return res.status(500).json({ error: "Failed to update photo details" });
-      }
-      console.log(`✅ Photo ${photo_id} updated successfully.`);
-      res.json({ message: "Details updated successfully", photo_id });
+    `, [date_taken || null, location || 'Unknown', photographer || 'Unknown', photo_id], function (err) {
+        if (err) {
+            console.error("❌ Error updating photo details:", err.message);
+            return res.status(500).json({ error: "Failed to update photo details" });
+        }
+        console.log(`✅ Photo ${photo_id} updated successfully.`);
+        res.json({ message: "Details updated successfully", photo_id });
     });
-  });
-    
+});
 
-  
+
+
 app.post('/api/approve-photo', (req, res) => {
     const { photo_id } = req.body;
     if (!photo_id) {
@@ -469,55 +512,55 @@ app.post('/api/approve-photo', (req, res) => {
 app.post('/api/delete-photo', (req, res) => {
     const { photo_id } = req.body;
     if (!photo_id) {
-      return res.status(400).json({ error: "Missing photo_id" });
+        return res.status(400).json({ error: "Missing photo_id" });
     }
-  
+
     // 1) Fetch the photo's image_filename from the database
     const selectQuery = `SELECT image_filename FROM bird_photos WHERE id = ?`;
     db.get(selectQuery, [photo_id], (err, row) => {
-      if (err) {
-        console.error("❌ Error fetching photo record:", err);
-        return res.status(500).json({ error: "Error fetching photo record" });
-      }
-      if (!row) {
-        return res.status(404).json({ error: "Photo record not found" });
-      }
-  
-      // e.g. https://firebasestorage.googleapis.com/v0/b/YOUR_BUCKET/o/pending_approval%2FmyPhoto.jpg?alt=media
-      const fileUrl = row.image_filename;
-      const matches = fileUrl.match(/.*\/o\/([^?]+)\?alt.*/);
-      let decodedPath = null;
-      if (matches && matches[1]) {
-        decodedPath = decodeURIComponent(matches[1]); // e.g. pending_approval/myPhoto.jpg
-      }
-  
-      // 2) Delete from the DB
-      const deleteQuery = `DELETE FROM bird_photos WHERE id = ?`;
-      db.run(deleteQuery, [photo_id], async function (err2) {
-        if (err2) {
-          console.error("❌ Error deleting photo from DB:", err2.message);
-          return res.status(500).json({ error: "Failed to delete photo from DB" });
+        if (err) {
+            console.error("❌ Error fetching photo record:", err);
+            return res.status(500).json({ error: "Error fetching photo record" });
         }
-        console.log(`✅ Photo ${photo_id} deleted from database.`);
-  
-        // 3) If we found a valid path, remove the file from Firebase
-        if (decodedPath) {
-          try {
-            await storage.file(decodedPath).delete();
-            console.log(`✅ File "${decodedPath}" deleted from Firebase Storage.`);
-          } catch (err3) {
-            console.error("❌ Error deleting file from Firebase:", err3.message);
-            // Depending on your preference, you can return an error here or proceed.
-          }
+        if (!row) {
+            return res.status(404).json({ error: "Photo record not found" });
         }
-  
-        // 4) Respond success
-        return res.json({ message: "Photo deleted successfully", photo_id });
-      });
+
+        // e.g. https://firebasestorage.googleapis.com/v0/b/YOUR_BUCKET/o/pending_approval%2FmyPhoto.jpg?alt=media
+        const fileUrl = row.image_filename;
+        const matches = fileUrl.match(/.*\/o\/([^?]+)\?alt.*/);
+        let decodedPath = null;
+        if (matches && matches[1]) {
+            decodedPath = decodeURIComponent(matches[1]); // e.g. pending_approval/myPhoto.jpg
+        }
+
+        // 2) Delete from the DB
+        const deleteQuery = `DELETE FROM bird_photos WHERE id = ?`;
+        db.run(deleteQuery, [photo_id], async function (err2) {
+            if (err2) {
+                console.error("❌ Error deleting photo from DB:", err2.message);
+                return res.status(500).json({ error: "Failed to delete photo from DB" });
+            }
+            console.log(`✅ Photo ${photo_id} deleted from database.`);
+
+            // 3) If we found a valid path, remove the file from Firebase
+            if (decodedPath) {
+                try {
+                    await storage.file(decodedPath).delete();
+                    console.log(`✅ File "${decodedPath}" deleted from Firebase Storage.`);
+                } catch (err3) {
+                    console.error("❌ Error deleting file from Firebase:", err3.message);
+                    // Depending on your preference, you can return an error here or proceed.
+                }
+            }
+
+            // 4) Respond success
+            return res.json({ message: "Photo deleted successfully", photo_id });
+        });
     });
-  });
-  
-  
+});
+
+
 
 // ✅ Helper function to link species to photo (supports multiple species per image)
 function linkSpeciesToPhoto(photo_id, species_id, res) {
