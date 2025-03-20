@@ -46,6 +46,14 @@ admin.initializeApp({
 
 const storage = admin.storage().bucket();
 
+function requireLogin(req, res, next) {
+    // Check if user is 'loggedIn' in the session
+    if (req.session && req.session.loggedIn) {
+      return next(); // proceed to the next middleware or route handler
+    }
+    // If not logged in, redirect them
+    return res.redirect('/login');
+  }  
 
 // ✅ Serve static files from the public folder
 app.use(express.static(FRONTEND_DIR));

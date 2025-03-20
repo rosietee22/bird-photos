@@ -3,9 +3,10 @@ const API_BASE_URL = "https://birdpics.pics";
 document.addEventListener("DOMContentLoaded", () => {
     // If the user is on /home or /admin, fetch all photos:
     if (window.location.pathname.includes("home") || window.location.pathname.includes("admin")) {
-      fetchPhotos(); // => Calls /api/photos
+        fetchPhotos(); // => Calls /api/photos
     }
-  });  
+});
+
 
 function populateSpeciesFilter(photos) {
     const filterDropdown = document.getElementById("species-filter");
@@ -63,14 +64,13 @@ function displayPhotos(photos) {
         // For home pages, just display the species as paragraph text.
         let speciesText;
         if (isAdminPage) {
-            speciesText = `<div id="species-container-${photo.id}"><strong>Species:</strong> ${
-                speciesArray.map(species => `
+            speciesText = `<div id="species-container-${photo.id}"><strong>Species:</strong> ${speciesArray.map(species => `
                     <span class="species-tag">
                         ${species} 
                         ${species !== "Unknown" ? `<span class="remove-species" onclick="removeSpecies(${photo.id}, '${species}')">✖</span>` : ""}
                     </span>
                 `).join(" ")
-            }</div>`;
+                }</div>`;
         } else {
             speciesText = `<p><strong>Species:</strong> ${speciesArray.join(", ")}</p>`;
         }
@@ -123,27 +123,27 @@ function displayPhotos(photos) {
 
 function deletePhoto(photoId) {
     if (confirm("Are you sure you want to delete this photo?")) {
-      fetch(`${API_BASE_URL}/api/delete-photo`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ photo_id: photoId })
-      })
-        .then(response => response.json())
-        .then(data => {
-          alert("Photo deleted successfully.");
-          // Remove the photo card from the DOM
-          const photoCard = document.getElementById(`bird-card-${photoId}`) || document.getElementById(`photo-${photoId}`);
-          if (photoCard) {
-            photoCard.remove();
-          }
+        fetch(`${API_BASE_URL}/api/delete-photo`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ photo_id: photoId })
         })
-        .catch(error => {
-          console.error("Error deleting photo:", error);
-          alert("Error deleting photo.");
-        });
+            .then(response => response.json())
+            .then(data => {
+                alert("Photo deleted successfully.");
+                // Remove the photo card from the DOM
+                const photoCard = document.getElementById(`bird-card-${photoId}`) || document.getElementById(`photo-${photoId}`);
+                if (photoCard) {
+                    photoCard.remove();
+                }
+            })
+            .catch(error => {
+                console.error("Error deleting photo:", error);
+                alert("Error deleting photo.");
+            });
     }
-  }
-  
+}
+
 
 // 🔹 Function to Edit Photographer Name
 function editPhotographer(photoId) {
@@ -171,28 +171,28 @@ function updatePhotographer(photoId) {
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ photo_id: photoId, photographer: newPhotographer })
         })
-        .then(response => response.json())
-        .then(() => {
-            fetch(`${API_BASE_URL}/api/photos`)
-                .then(response => response.json())
-                .then(photos => {
-                    const photo = photos.find(p => p.id === photoId);
-                    if (!photo) return;
+            .then(response => response.json())
+            .then(() => {
+                fetch(`${API_BASE_URL}/api/photos`)
+                    .then(response => response.json())
+                    .then(photos => {
+                        const photo = photos.find(p => p.id === photoId);
+                        if (!photo) return;
 
-                    const photographerText = document.getElementById(`photographer-text-${photoId}`);
-                    const photographerInput = document.getElementById(`photographer-input-${photoId}`);
-                    const updateButton = document.getElementById(`update-photographer-${photoId}`);
+                        const photographerText = document.getElementById(`photographer-text-${photoId}`);
+                        const photographerInput = document.getElementById(`photographer-input-${photoId}`);
+                        const updateButton = document.getElementById(`update-photographer-${photoId}`);
 
-                    // Update UI with new photographer name
-                    document.getElementById(`photographer-name-${photoId}`).textContent = photo.photographer;
+                        // Update UI with new photographer name
+                        document.getElementById(`photographer-name-${photoId}`).textContent = photo.photographer;
 
-                    // Hide input and show text
-                    photographerText.style.display = "inline";
-                    photographerInput.style.display = "none";
-                    updateButton.style.display = "none";
-                });
-        })
-        .catch(error => console.error("❌ Error updating photographer:", error));
+                        // Hide input and show text
+                        photographerText.style.display = "inline";
+                        photographerInput.style.display = "none";
+                        updateButton.style.display = "none";
+                    });
+            })
+            .catch(error => console.error("❌ Error updating photographer:", error));
     }
 }
 
@@ -263,13 +263,13 @@ function updateSpecies(photoId) {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ photo_id: photoId, common_name: speciesName })
     })
-    .then(response => response.json())
-    .then(data => {
-        console.log("Species updated successfully:", data);
-        updateBirdCard(photoId);
-        inputField.value = "";
-    })
-    .catch(error => console.error("Error updating species:", error));
+        .then(response => response.json())
+        .then(data => {
+            console.log("Species updated successfully:", data);
+            updateBirdCard(photoId);
+            inputField.value = "";
+        })
+        .catch(error => console.error("Error updating species:", error));
 }
 
 
@@ -321,26 +321,26 @@ function updateLocation(photoId) {
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ photo_id: photoId, location: newLocation })
         })
-        .then(response => response.json())
-        .then(() => {
-            fetch(`${API_BASE_URL}/api/photos`)
-                .then(response => response.json())
-                .then(photos => {
-                    const photo = photos.find(p => p.id === photoId);
-                    if (!photo) return;
+            .then(response => response.json())
+            .then(() => {
+                fetch(`${API_BASE_URL}/api/photos`)
+                    .then(response => response.json())
+                    .then(photos => {
+                        const photo = photos.find(p => p.id === photoId);
+                        if (!photo) return;
 
-                    const currentLocation = document.getElementById(`location-text-${photoId}`);
-                    const inputField = document.getElementById(`location-input-${photoId}`);
-                    const updateButton = document.getElementById(`update-location-${photoId}`);
+                        const currentLocation = document.getElementById(`location-text-${photoId}`);
+                        const inputField = document.getElementById(`location-input-${photoId}`);
+                        const updateButton = document.getElementById(`update-location-${photoId}`);
 
-                    // Update UI with new location
-                    currentLocation.innerHTML = `<strong>Location:</strong> ${photo.location}`;
-                    currentLocation.style.display = "inline";
-                    inputField.style.display = "none";
-                    updateButton.style.display = "none";
-                });
-        })
-        .catch(error => console.error("❌ Error updating location:", error));
+                        // Update UI with new location
+                        currentLocation.innerHTML = `<strong>Location:</strong> ${photo.location}`;
+                        currentLocation.style.display = "inline";
+                        inputField.style.display = "none";
+                        updateButton.style.display = "none";
+                    });
+            })
+            .catch(error => console.error("❌ Error updating location:", error));
     }
 }
 
