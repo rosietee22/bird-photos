@@ -49,11 +49,11 @@ const storage = admin.storage().bucket();
 function requireLogin(req, res, next) {
     // Check if user is 'loggedIn' in the session
     if (req.session && req.session.loggedIn) {
-      return next(); // proceed to the next middleware or route handler
+        return next(); // proceed to the next middleware or route handler
     }
     // If not logged in, redirect them
     return res.redirect('/login');
-  }  
+}
 
 // ✅ Serve static files from the public folder
 app.use(express.static(FRONTEND_DIR));
@@ -132,11 +132,27 @@ app.get('/login', (req, res) => {
     }
     // Send a very simple HTML form:
     res.send(`
-      <h2>Login</h2>
-      <form method="POST" action="/login">
-        <label>Password: <input type="password" name="password" /></label>
-        <button type="submit">Login</button>
-      </form>
+      <!DOCTYPE html>
+    <html lang="en">
+      <head>
+        <meta charset="UTF-8"/>
+        <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+        <title>Login - Bird Pictures</title>
+        <link rel="stylesheet" href="styles.css"/>
+      </head>
+      <body>
+        <div class="login-container">
+          <h2 style="margin-top: 0;">Login</h2>
+          <form method="POST" action="/login">
+            <label style="font-size:13px;"><strong>Password:</strong></label>
+            <br>
+            <input type="password" name="password" required/>
+            <br>
+            <button type="submit">Login</button>
+          </form>
+        </div>
+      </body>
+    </html>
     `);
 });
 

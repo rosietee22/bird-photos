@@ -480,7 +480,7 @@ label  {
 }
 
 .upload-container {
-    background: #fff;
+    background-color: #f7f7f7;
     padding: 20px;
     margin: 40px auto;
     width: 90%;
@@ -504,3 +504,37 @@ label  {
     margin-top: 15px;
     font-weight: bold;
 }
+
+.login-container {
+    background-color: #f7f7f7;
+    padding: 20px;
+    margin: 40px auto;
+    width: 90%;
+    max-width: 400px;
+    border-radius: 8px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    text-align: center; /* center elements */
+  }
+  
+  .login-container input[type="password"] {
+    margin-top: 10px;
+    margin-bottom: 15px;
+    padding: 8px;
+    width: 100%;
+    border: 1px solid #000;
+    font-size: 13px;
+  }
+  
+  .login-container button {
+    padding: 8px 16px;
+    background-color: #f7f7f7;
+    color: #000000;
+    text-decoration: none;
+    font-size: 13px;
+    border: 2px solid #000000;
+    transition: 0.3s;
+    cursor: pointer;
+  }
+  
+
+  
