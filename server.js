@@ -6,7 +6,6 @@ const axios = require('axios');
 const fs = require('fs');
 const { exec } = require('child_process');
 const { format } = require('date-fns');
-const express = require('express');
 const session = require('express-session');
 
 const dbPath = '/persistent/birds.db';  // ✅ Ensure dbPath is set before use
