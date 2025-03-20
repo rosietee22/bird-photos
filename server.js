@@ -130,7 +130,7 @@ db.serialize(() => {
 // If user is already logged in, they shouldn't need to see the login form again.
 app.get('/login', (req, res) => {
     if (req.session.loggedIn) {
-        return res.redirect('/admin');
+        return res.redirect('/upload');
     }
     // Send a very simple HTML form:
     res.send(`
@@ -163,7 +163,7 @@ app.post('/login', (req, res) => {
     // Compare with your "ADMIN_PASSWORD" or a simple string
     if (password === (process.env.ADMIN_PASSWORD || 'wildlife')) {
         req.session.loggedIn = true;
-        return res.redirect('/admin'); // or /approval, whichever is main
+        return res.redirect('/upload'); // or /approval, whichever is main
     }
     // else:
     res.send('Invalid password. <a href="/login">Try again</a>');
