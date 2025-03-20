@@ -110,6 +110,9 @@ function displayPhotos(photos) {
                     <input type="text" id="photographer-input-${photo.id}" placeholder="Enter Photographer" style="display:none;">
                     <button id="update-photographer-${photo.id}" onclick="updatePhotographer(${photo.id})" style="display:none;">Update Photographer</button>
                 </div>
+
+                <button onclick="deletePhoto(${photo.id})">Delete Photo</button>
+
             `;
         }
 
