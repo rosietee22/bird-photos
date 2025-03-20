@@ -26,6 +26,16 @@ if (!fs.existsSync(dbPath)) {
 }
 
 const app = express();
+app.use(
+    session({
+        secret: process.env.SESSION_SECRET || 'SUPER_SECRET_KEY',
+        resave: false,
+        saveUninitialized: true,
+        cookie: {
+            maxAge: 1000 * 60 * 60 // 1 hour session
+        }
+    })
+);
 
 // Improved error handling for database connection
 const db = new sqlite3.Database(dbPath, (err) => {
@@ -45,6 +55,9 @@ admin.initializeApp({
 });
 
 const storage = admin.storage().bucket();
+
+// We'll parse form data, so ensure your Express config has:
+app.use(express.urlencoded({ extended: true }));
 
 function requireLogin(req, res, next) {
     // Check if user is 'loggedIn' in the session
@@ -82,17 +95,6 @@ app.get('/approval', requireLogin, (req, res) => {
 app.use('/api', (req, res, next) => {
     next(); // Allow API routes to be handled first
 });
-
-app.use(
-    session({
-        secret: process.env.SESSION_SECRET || 'SUPER_SECRET_KEY',
-        resave: false,
-        saveUninitialized: true,
-        cookie: {
-            maxAge: 1000 * 60 * 60 // 1 hour session
-        }
-    })
-);
 
 const IMAGES_FOLDER = path.join(__dirname, 'public/images');
 
@@ -155,9 +157,6 @@ app.get('/login', (req, res) => {
     </html>
     `);
 });
-
-// We'll parse form data, so ensure your Express config has:
-app.use(express.urlencoded({ extended: true }));
 
 app.post('/login', (req, res) => {
     const { password } = req.body;
