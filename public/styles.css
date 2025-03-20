@@ -5,17 +5,26 @@
     font-style: normal;
 }
 
+/* Global base styles */
 body {
     font-family: 'ABCDailySlabMonoLight', serif;
+    font-size: 13px;
+    color: #000;
     background-color: #f7f7f7;
     margin: 0;
     text-align: center;
     min-height: 100vh;
     padding-top: 0;
-    text-transform: uppercase;
+    text-transform: uppercase; /* everything is uppercase unless overridden */
 }
 
-/* --- Default (Desktop and Mobile Landing) Header Styles --- */
+/* 1) Force all links to be black (not blue) */
+a, a:visited, a:hover, a:active {
+    color: #000;
+    text-decoration: underline;
+}
+
+/* --- Default Header Styles (Desktop + Mobile Landing) --- */
 .site-header {
     position: relative;
     padding: 10px 20px;
@@ -44,12 +53,10 @@ body {
     margin-left: 5px;
     border: 1px solid #000;
     text-decoration: none;
-    color: inherit;
-    font-size: 13px;
+    font-size: inherit;
     padding: 4px 8px;
     display: inline-block;
     vertical-align: middle;
-    text-transform: uppercase;
 }
 
 .header-nav a.top-button img {
@@ -60,22 +67,15 @@ body {
 
 /* Fix for sticky header on short pages */
 @media (max-width: 600px) {
-    body {
-        /* Prevent content jump when header becomes fixed */
-        padding-top: 0;
+    body.has-sticky-header {
+        padding-top: 70px; /* Adjust to match your header height */
     }
-    
-    /* Add a transition for smoother sticky header appearance */
     .site-header {
         transition: all 0.2s ease;
     }
-    
-    /* Ensure content doesn't jump when header becomes sticky */
-    body.has-sticky-header {
-        padding-top: 70px; /* Adjust to match your header height */
-    }}
+}
 
-/* --- Mobile Sticky Header Styles (applied when .sticky is added) --- */
+/* --- Mobile Sticky Header Styles (when .sticky is added) --- */
 @media (max-width: 600px) {
     .site-header.sticky {
         position: fixed;
@@ -98,8 +98,7 @@ body {
     }
 
     .site-header.sticky .header-logo img.logo {
-        width: 100px;
-        /* Smaller logo in sticky mode */
+        width: 100px; /* smaller logo in sticky mode */
         margin: 0;
         padding-top: 10px;
     }
@@ -110,19 +109,19 @@ body {
     }
 
     .site-header.sticky .header-nav a.top-button {
-        font-size: 13px;
-        padding: 0px 6px;
-        margin-left: 5px;
-        text-transform: uppercase;
+        font-size: inherit;
+        padding: 4px 8px;
+        margin-left: 5px; 
     }
 }
+
 
 /* Ensure main content is not hidden behind sticky header on mobile */
 main {
     padding-top: 0px;
 }
 
-
+/* Index page layout */
 .index-page {
     min-height: 100vh;
     display: flex;
@@ -131,14 +130,12 @@ main {
     justify-content: center;
     text-align: center;
     gap: 0px;
-    /* Small gap between elements */
 }
 
 h1 {
-    font-family: serifFont;
+    font-family: serifFont; /* if you want something distinct from ABCDailySlabMonoLight */
     font-weight: bold;
     font-size: 2.3rem;
-    text-transform: uppercase;
     letter-spacing: -0.5px;
 }
 
@@ -149,7 +146,6 @@ header {
 
 .logo {
     width: 180px;
-    /* Adjust size as needed */
     height: auto;
     display: block;
     margin: 0 auto;
@@ -161,55 +157,20 @@ header {
     padding-top: 0;
 }
 
-p,
-a {
-    font-size: 13px;
-    color: #000000;
-    text-transform: uppercase;
-}
-
 a {
     text-decoration: underline;
-}
-
-label  {
-    font-size: 13px;
-    text-transform: uppercase;
 }
 
 .button {
     display: inline-block;
     padding: 8px 16px;
     background-color: #f7f7f7;
-    color: #000000;
-    text-decoration: none;
-    font-size: 13px;
     border: 2px solid #000000;
     transition: 0.3s;
     margin-bottom: 20px;
-    text-transform: uppercase;
 }
 
-.button:hover {
-    background-color: #f7f7f7;
-    color: #000;
-}
-
-.top-button {
-    font-family: inherit;
-    margin-left: 15px;
-    border: 1px solid #000;
-    text-decoration: none;
-    color: inherit;
-    font-size: 13px;
-    padding: 4px 4px;
-    display: inline-block;
-    vertical-align: middle;
-    text-transform: uppercase;
-}
-
-
-/* 🔹 Updated Species Filter Styling */
+/* --- Filter Container --- */
 .filter-container {
     display: flex;
     align-items: center;
@@ -218,9 +179,7 @@ label  {
     gap: 10px;
 }
 
-/* Added missing closing brace */
-
-/* Style the dropdown */
+/* Style the species dropdown */
 #species-filter {
     padding: 8px 10px;
     font-family: 'Tiempos Text Web', serif;
@@ -229,23 +188,9 @@ label  {
     border-radius: 6px;
     cursor: pointer;
     transition: all 0.2s ease-in-out;
-    /* Force correct font */
-    font-size: 13px !important;
-    /* Set a fixed font size */
-    color: black !important;
-    /* Ensures text color remains black */
     text-align: left;
-    /* Align text properly */
-    text-transform: uppercase;
-}
-
-/* Dropdown hover effect */
-#species-filter:hover {
-    background-color: #f0f0f0;
-}
-
-/* Remove default browser dropdown arrow */
-#species-filter {
+    color: black !important;
+    text-transform: uppercase; /* (redundant with body, but forced if needed) */
     appearance: none;
     -webkit-appearance: none;
     -moz-appearance: none;
@@ -256,18 +201,19 @@ label  {
     padding-right: 30px;
 }
 
-/* Dropdown focus effect */
+#species-filter:hover {
+    background-color: #f0f0f0;
+}
+
 #species-filter:focus {
     outline: none;
     border-color: black;
 }
 
-/* Dropdown like a button */
 #species-filter.button-style {
     background: black;
     color: white;
     font-weight: bold;
-    text-transform: uppercase;
     border-radius: 6px;
     padding: 10px 16px;
     border: none;
@@ -278,112 +224,96 @@ label  {
     background-color: #333;
 }
 
-/* 🔹 Full-Width Responsive Image Grid */
+/* --- Photo Gallery Grid --- */
 #photo-gallery {
     display: grid;
     min-height: calc(100vh - 200px);
-    grid-template-columns: repeat(3, 1fr);
-    /* Always 3 columns */
+    grid-template-columns: repeat(3, 1fr); /* Always 3 columns */
     gap: 20px;
     padding: 0 20px;
     max-width: 85vw;
     margin: 0 auto;
-    justify-content: center;
-    /* Centers items when there are fewer */
+    justify-content: center; /* centers items when fewer than 3 */
 }
 
-/* 🔹 Center grid items when there are fewer than 3 */
+/* Center grid items if filtering leaves 1-2 results */
 #photo-gallery:has(.photo-card:nth-child(1):nth-last-child(-n+2)) {
     justify-content: center;
-    /* Ensures centering when filtering */
 }
 
-/* 🔹 Photo Cards */
+/* --- Photo Cards --- */
 .photo-card {
     display: flex;
     flex-direction: column;
     align-items: center;
     justify-content: space-between;
-    border: 0px solid black;
+    border: 0;
     width: 100%;
-    /* Full grid column */
-    text-align: left;
     box-sizing: border-box;
+    position: relative;
     padding: 2vw;
-    /* Responsive padding based on viewport width */
+    text-align: center;
 }
 
-/* 🔹 Images inside cards */
 .photo-card img {
     width: 90%;
-    /* Image size stays consistent */
     height: auto;
     max-height: 80vh;
-    /* Keeps images inside viewport */
     display: block;
     object-fit: contain;
-    /* Ensures full images are visible */
 }
 
-/* 🔹 Responsive grid Adjustments */
+/* Responsive grid adjustments */
 @media (max-width: 1024px) {
     #photo-gallery {
         grid-template-columns: repeat(2, 1fr);
-        /* Two per row on tablets */
+        /* 2 per row on tablets */
     }
 }
 
 @media (max-width: 600px) {
     #photo-gallery {
         grid-template-columns: repeat(1, 1fr);
-        /* One per row on mobile */
+        /* 1 per row on mobile */
     }
-
     .photo-card {
-        padding: 4vw;
-        /* Increase padding on smaller screens */
+        padding: 4vw; /* increase padding on smaller screens */
     }
 }
 
-/* 🔹 Date + Location Top Left */
+/* Date + Location top-left */
 .photo-info {
     top: 0;
     left: 0;
     padding: 10px;
-    font-size: 13px;
-    text-align: center;
-    max-width: 100%;
     font-style: italic;
-}
-
-/* Ensure the photo-card allows absolute positioning */
-.photo-card {
-    position: relative;
-    padding: 2vw;
+    max-width: 100%;
     text-align: center;
 }
 
+/* Species tags & removal */
 .species-tag {
     display: inline-block;
     padding: 3px 6px;
     border: 1px solid black;
-    font-size: 13px;
     margin: 2px;
-}
-
-.remove-species {
-    cursor: pointer;
-    font-size: 13px;
-    margin-left: 5px;
-    color: black;
 }
 
 .species-tag.unknown {
     background: none;
 }
 
+.remove-species {
+    cursor: pointer;
+    margin-left: 5px;
+    color: black;
+}
+
+/* Species input container */
 .species-input-container {
+    position: relative;
     display: flex;
+    width: 100%;
     align-items: center;
     gap: 5px;
     margin-top: 10px;
@@ -393,7 +323,6 @@ label  {
     padding: 5px;
     flex: 1;
     border: 1px solid black;
-    font-size: 13px;
 }
 
 .species-input-container button {
@@ -402,21 +331,19 @@ label  {
     color: white;
     border: none;
     cursor: pointer;
-    font-size: 13px;
 }
 
 .species-input-container button:hover {
     background: #333;
 }
 
+/* Slideshow container */
 .slideshow-container {
     width: 100%;
     max-width: 300px;
     height: auto;
-    margin: 0 auto;
-    /* Center horizontally */
+    margin: 0 auto; 
     padding: 0;
-    /* Remove extra padding */
     display: flex;
     justify-content: center;
     align-items: center;
@@ -429,6 +356,7 @@ label  {
     display: block;
 }
 
+/* Autocomplete container */
 .autocomplete-container {
     position: relative;
     display: inline-block;
@@ -446,12 +374,6 @@ label  {
     background: #f0f0f0;
 }
 
-.species-input-container {
-    position: relative;
-    display: inline-block;
-    width: 100%;
-}
-
 .species-dropdown {
     position: absolute;
     background: white;
@@ -461,24 +383,22 @@ label  {
     width: 100%;
     z-index: 10;
     box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-    font-size: 13px;
 }
 
-
+/* smaller select & dropdowns on mobile */
 @media (max-width: 600px) {
     select {
         max-width: 200px;
     }
-
     .autocomplete-item {
-        font-size: 13px;
+        font-size: inherit; /* rely on the body’s 13px */
     }
-
     .species-dropdown {
         max-height: 120px;
     }
 }
 
+/* Upload container */
 .upload-container {
     background-color: #f7f7f7;
     padding: 20px;
@@ -492,9 +412,9 @@ label  {
 .upload-container h1 {
     font-size: 1.5em;
     margin-bottom: 20px;
-    text-transform: uppercase;
 }
 
+/* Upload elements */
 #file-input {
     margin: 10px 0;
     width: 100%;
@@ -505,6 +425,7 @@ label  {
     font-weight: bold;
 }
 
+/* Login container */
 .login-container {
     background-color: #f7f7f7;
     padding: 20px;
@@ -513,28 +434,23 @@ label  {
     max-width: 400px;
     border-radius: 8px;
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-    text-align: center; /* center elements */
-  }
-  
-  .login-container input[type="password"] {
+    text-align: center;
+}
+
+.login-container input[type="password"] {
     margin-top: 10px;
     margin-bottom: 15px;
     padding: 8px;
     width: 100%;
     border: 1px solid #000;
-    font-size: 13px;
-  }
-  
-  .login-container button {
+}
+
+.login-container button {
     padding: 8px 16px;
     background-color: #f7f7f7;
     color: #000000;
     text-decoration: none;
-    font-size: 13px;
     border: 2px solid #000000;
     transition: 0.3s;
     cursor: pointer;
-  }
-  
-
-  
+}
