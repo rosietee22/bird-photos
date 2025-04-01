@@ -59,14 +59,14 @@ const storage = admin.storage().bucket();
 // We'll parse form data, so ensure your Express config has:
 app.use(express.urlencoded({ extended: true }));
 
-//function requireLogin(req, res, next) {
+function requireLogin(req, res, next) {
     // Check if user is 'loggedIn' in the session
-   // if (req.session && req.session.loggedIn) {
-     //   return next(); // proceed to the next middleware or route handler
-    //}
+   if (req.session && req.session.loggedIn) {
+        return next(); // proceed to the next middleware or route handler
+    }
     // If not logged in, redirect them
-    //return res.redirect('/login');
-//}
+    return res.redirect('/login');
+}
 
 // ✅ Serve static files from the public folder
 app.use(express.static(FRONTEND_DIR));
