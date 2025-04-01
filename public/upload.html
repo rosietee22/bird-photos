@@ -5,41 +5,70 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Upload Bird Photo</title>
+
+  <!-- Firebase libraries -->
   <script src="https://www.gstatic.com/firebasejs/11.3.1/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/11.3.1/firebase-analytics-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/11.3.1/firebase-auth-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/11.3.1/firebase-storage-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/11.3.1/firebase-firestore-compat.js"></script>
+
   <link rel="stylesheet" href="styles.css">
   <link rel="icon" type="image/png" href="assets/favicon.png"> 
-
 </head>
+
+<!-- Google tag (gtag.js) -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-Q6BXSD8K0P"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+
+  gtag('config', 'G-Q6BXSD8K0P');
+</script>
 
 <body>
   <a href="home.html"><img src="assets/logo2.png" alt="Bird Pictures Logo" class="logo"></a>
 
+  <!-- If not signed in, the user sees this container -->
+  <div id="signin-container" style="display:none;">
+    <p>You must sign in to upload photos.</p>
+    <button onclick="signInWithGoogle()">Sign in with Google</button>
+  </div>
+
   <div class="upload-container">
     <p>Upload a Bird Photo</p>
+
+    <!-- The upload UI is hidden until the user is signed in -->
     <div id="upload-container" style="display: none;">
       <input type="file" id="file-input" accept="image/*">
       <br>
       <button onclick="uploadFile()">Upload</button>
     </div>
-    <!-- Status messages are wrapped in a paragraph -->
+    
+    <!-- Status messages -->
     <div id="upload-status"></div>
 
+    <!-- Metadata form, shown when EXIF is available -->
     <div id="metadata-form" style="display:none; margin-top:20px;">
       <h3>Edit Photo Details</h3>
-      <img id="photo-preview" src="" style="max-width:300px;margin-bottom:15px;"><br>
+      <img id="photo-preview" src="" style="max-width:300px; margin-bottom:15px;"><br>
+      
       <label>Date Taken:<br>
         <input type="date" id="date_taken">
-      </label><br><br>
+      </label>
+      <br><br>
+      
       <label>Location:<br>
         <input type="text" id="location" placeholder="Location">
-      </label><br><br>
+      </label>
+      <br><br>
+      
       <label>Your Name:<br>
         <input type="text" id="photographer" placeholder="Photographer">
-      </label><br><br>
+      </label>
+      <br><br>
+      
       <button onclick="submitMetadata()">Save Details</button>
     </div>
   </div>
@@ -48,6 +77,7 @@
     // Define API base URL for polling
     const API_BASE_URL = "https://birdpics.pics";
 
+    // Firebase config
     const firebaseConfig = {
       apiKey: "AIzaSyDkLWluUOc_L0Mtj6MwedKDF27Rh-HqwrQ",
       authDomain: "bird-pictures-953b0.firebaseapp.com",
@@ -61,12 +91,46 @@
     firebase.initializeApp(firebaseConfig);
     firebase.analytics();
 
+    // Listen for auth changes: if user is signed in, show upload UI; if not, show sign-in button
     document.addEventListener("DOMContentLoaded", () => {
-      document.getElementById("upload-container").style.display = "block";
+      firebase.auth().onAuthStateChanged((user) => {
+        if (user) {
+          // Hide sign-in container
+          document.getElementById('signin-container').style.display = 'none';
+          // Show upload UI
+          document.getElementById('upload-container').style.display = 'block';
+        } else {
+          // Not signed in -> Show sign-in container, hide upload
+          document.getElementById('signin-container').style.display = 'block';
+          document.getElementById('upload-container').style.display = 'none';
+        }
+      });
     });
+
+    // Google Sign-In
+    function signInWithGoogle() {
+      const provider = new firebase.auth.GoogleAuthProvider();
+      firebase.auth().signInWithPopup(provider)
+        .then(result => {
+          console.log("Signed in as:", result.user.email);
+          // onAuthStateChanged will handle UI changes
+        })
+        .catch(error => {
+          console.error("Error with Google Sign-In:", error);
+          alert("Failed to sign in. Please try again.");
+        });
+    }
+
+    // Optional sign-out
+    function signOut() {
+      firebase.auth().signOut()
+        .then(() => console.log("Signed out"))
+        .catch(err => console.error("Error signing out:", err));
+    }
 
     let currentPhotoId = null;
 
+    // Upload file to Firebase Storage (requires user to be signed in)
     function uploadFile() {
       const fileInput = document.getElementById("file-input").files[0];
       if (!fileInput) {
@@ -80,7 +144,6 @@
       uploadTask.on("state_changed",
         snapshot => {
           const progress = (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
-          // Wrap status message in <p> tags
           document.getElementById("upload-status").innerHTML = `<p>Upload is ${progress.toFixed(0)}% done</p>`;
         },
         error => {
@@ -88,12 +151,11 @@
           alert("Error uploading file.");
         },
         () => {
+          // Once upload finishes, get the URL
           uploadTask.snapshot.ref.getDownloadURL().then(downloadURL => {
             console.log("File available at", downloadURL);
             document.getElementById("upload-status").innerHTML =
               `<p>✅ Upload complete! Waiting for Cloud Function to process EXIF data.</p>`;
-
-            // Start polling for metadata based on the processed file name.
             pollForMetadata(downloadURL);
           }).catch(error => {
             console.error("Error retrieving URL:", error);
@@ -103,19 +165,18 @@
       );
     }
 
-    // Poll the backend until the Cloud Function has processed the image and metadata is available.
+    // Poll the backend until the Cloud Function finishes
     function pollForMetadata(originalDownloadURL) {
-      // Remove token parameter if present
+      // Remove token param
       let urlWithoutToken = originalDownloadURL.split('&token=')[0];
 
-      // Split URL into path and query parts
       const altIndex = urlWithoutToken.indexOf('?');
-      let pathPart = urlWithoutToken.substring(0, altIndex); // e.g. .../pending_approval/PXL_20250311_155518805.jpg
-      let queryPart = urlWithoutToken.substring(altIndex);   // e.g. ?alt=media
+      let pathPart = urlWithoutToken.substring(0, altIndex); 
+      let queryPart = urlWithoutToken.substring(altIndex);
 
-      // Insert "_p" before the file extension in the path.
+      // Insert "_p" before extension
       const lastDotIndex = pathPart.lastIndexOf('.');
-      const processedPathPart = lastDotIndex !== -1 
+      const processedPathPart = (lastDotIndex !== -1)
         ? pathPart.substring(0, lastDotIndex) + '_p' + pathPart.substring(lastDotIndex)
         : pathPart + '_p';
 
@@ -126,26 +187,26 @@
         fetch(`${API_BASE_URL}/api/pending-photos`)
           .then(response => response.json())
           .then(photos => {
-            // Look for a record with a matching image_filename (processed URL)
             const photo = photos.find(p => p.image_filename === processedDownloadURL);
             if (photo && photo.date_taken && photo.date_taken !== "Unknown date") {
               currentPhotoId = photo.id;
               showMetadataForm(photo, photo.image_filename);
               clearInterval(intervalId);
               console.log("Metadata found:", photo);
-              // Clear the pending message once metadata is available.
               document.getElementById("upload-status").innerHTML = "";
             }
           })
           .catch(error => {
             console.error("Error polling for metadata:", error);
           });
-      }, 3000); // Poll every 3 seconds
+      }, 3000);
     }
 
     function showMetadataForm(data, imageUrl) {
       document.getElementById('photo-preview').src = imageUrl;
-      document.getElementById('date_taken').value = data.date_taken ? data.date_taken.substring(0, 10) : '';
+      document.getElementById('date_taken').value = data.date_taken 
+        ? data.date_taken.substring(0, 10)
+        : '';
       document.getElementById('location').value = data.location || '';
       document.getElementById('photographer').value = data.photographer || '';
       document.getElementById('metadata-form').style.display = 'block';
@@ -171,6 +232,7 @@
           alert("Error updating metadata.");
         });
     }
+
   </script>
 </body>
 </html>
