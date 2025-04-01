@@ -86,6 +86,7 @@ app.get('/upload', (req, res) => {
     res.sendFile(path.join(__dirname, 'public', 'upload.html'));
 });
 
+
 // Serve the approval page at /approval
 app.get('/approval', requireLogin, (req, res) => {
     res.sendFile(path.join(__dirname, 'public', 'approval.html'));
