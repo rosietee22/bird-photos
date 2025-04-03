@@ -60,7 +60,7 @@
 
   <script src="script.js"></script>
   <script>
-    let allPhotos = [];
+    //let allPhotos = [];
 
     function fetchPhotos() {
       fetch("/api/photos")
@@ -71,57 +71,6 @@
           displayPhotos(photos);
         })
         .catch(error => console.error("❌ Error fetching photos:", error));
-    }
-
-    function populateSpeciesFilter(photos) {
-      const filterDropdown = document.getElementById("species-filter");
-      filterDropdown.innerHTML = `<option value="all">All Species</option>`;
-      const uniqueSpecies = new Set();
-      photos.forEach(photo => {
-        if (photo.species_names) {
-          photo.species_names.split(", ").forEach(species => uniqueSpecies.add(species));
-        }
-      });
-      uniqueSpecies.forEach(species => {
-        const option = document.createElement("option");
-        option.value = species;
-        option.textContent = species;
-        filterDropdown.appendChild(option);
-      });
-    }
-
-    function filterPhotos() {
-      const selectedSpecies = document.getElementById("species-filter").value;
-      // Save scroll position before filtering
-      const scrollPosition = window.pageYOffset || document.documentElement.scrollTop;
-
-      if (selectedSpecies === "all") {
-        displayPhotos(allPhotos);
-      } else {
-        const filteredPhotos = allPhotos.filter(photo =>
-          photo.species_names && photo.species_names.includes(selectedSpecies)
-        );
-        displayPhotos(filteredPhotos);
-      }
-
-      // If we're on mobile and there are few results, ensure the page is still scrollable
-      if (window.innerWidth <= 600) {
-        const photoGallery = document.getElementById("photo-gallery");
-        if (photoGallery) {
-          // If filtered results are minimal, ensure the gallery has minimum height
-          if ((selectedSpecies !== "all" && photoGallery.children.length <= 2) ||
-            photoGallery.children.length === 0) {
-            photoGallery.style.minHeight = "calc(100vh - 250px)";
-          } else {
-            photoGallery.style.minHeight = "";
-          }
-        }
-
-        // Restore scroll position after filtering to prevent jumps
-        setTimeout(() => {
-          window.scrollTo(0, scrollPosition);
-        }, 10);
-      }
     }
 
     document.addEventListener("DOMContentLoaded", fetchPhotos);
