@@ -193,7 +193,7 @@ app.get('/api/photos', (req, res) => {
             bp.id, bp.image_filename, bp.date_taken, bp.location,
             bp.latitude, bp.longitude, bp.species_suggestions,
             COALESCE(u.name, 'Unknown') AS photographer,
-            COALESCE(GROUP_CONCAT(DISTINCT bs.common_name SEPARATOR ', '), 'Unknown') AS species_names
+            COALESCE(GROUP_CONCAT(DISTINCT bs.common_name, ', '), 'Unknown') AS species_names
         FROM bird_photos bp
         LEFT JOIN bird_photo_species bps ON bp.id = bps.photo_id
         LEFT JOIN bird_species bs ON bps.species_id = bs.id
@@ -232,7 +232,7 @@ app.get('/api/pending-photos', requireLogin, (req, res) => {
           bp.id, bp.image_filename, bp.date_taken, bp.location,
           bp.latitude, bp.longitude, bp.species_suggestions,
           COALESCE(u.name, 'Unknown') AS photographer,
-          COALESCE(GROUP_CONCAT(DISTINCT bs.common_name SEPARATOR ', '), 'Unknown') AS species_names
+          COALESCE(GROUP_CONCAT(DISTINCT bs.common_name, ', '), 'Unknown') AS species_names
       FROM bird_photos bp
       LEFT JOIN bird_photo_species bps ON bp.id = bps.photo_id
       LEFT JOIN bird_species bs ON bps.species_id = bs.id
