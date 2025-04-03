@@ -115,6 +115,22 @@ a, a:visited, a:hover, a:active {
     }
 }
 
+#photo-preview {
+    display: block; /* Ensure it behaves like a block for centering/margins */
+    margin-left: auto;
+    margin-right: auto;
+    max-width: 300px; /* Default max-width for larger screens */
+    margin-bottom: 15px; /* Keep the bottom margin */
+    height: auto; /* Maintain aspect ratio */
+  }
+  
+  /* Apply styles for screens 600px wide or less (typical mobile breakpoint) */
+  @media (max-width: 600px) {
+    #photo-preview {
+      max-width: 200px; /* Smaller max-width for mobile */
+      /* You could use a percentage too, e.g., max-width: 80%; */
+    }
+  }
 
 /* Ensure main content is not hidden behind sticky header on mobile */
 main {
@@ -246,7 +262,7 @@ a {
     display: flex;
     flex-direction: column;
     align-items: center;
-    justify-content: space-between;
+    justify-content: flex-start;
     border: 0;
     width: 100%;
     box-sizing: border-box;

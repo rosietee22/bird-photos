@@ -37,6 +37,12 @@ app.use(
     })
 );
 
+// In your server.js file on Render (near the top)
+app.use((req, res, next) => {
+    res.setHeader('Cross-Origin-Opener-Policy', 'same-origin-allow-popups');
+    next();
+  });
+
 // Improved error handling for database connection
 const db = new sqlite3.Database(dbPath, (err) => {
     if (err) {

@@ -6,7 +6,6 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Upload Bird Photo</title>
 
-  <!-- Firebase libraries -->
   <script src="https://www.gstatic.com/firebasejs/11.3.1/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/11.3.1/firebase-analytics-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/11.3.1/firebase-auth-compat.js"></script>
@@ -14,10 +13,9 @@
   <script src="https://www.gstatic.com/firebasejs/11.3.1/firebase-firestore-compat.js"></script>
 
   <link rel="stylesheet" href="styles.css">
-  <link rel="icon" type="image/png" href="assets/favicon.png"> 
+  <link rel="icon" type="image/png" href="assets/favicon.png">
 </head>
 
-<!-- Google tag (gtag.js) -->
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-Q6BXSD8K0P"></script>
 <script>
   window.dataLayer = window.dataLayer || [];
@@ -30,7 +28,6 @@
 <body>
   <a href="home"><img src="assets/logo2.png" alt="Bird Pictures Logo" class="logo"></a>
 
-  <!-- If not signed in, the user sees this container -->
   <div id="signin-container" style="display:none;">
     <p>You must sign in to upload photos.</p>
     <button onclick="signInWithGoogle()">Sign in with Google</button>
@@ -39,36 +36,33 @@
   <div class="upload-container">
     <p>Upload a Bird Photo</p>
 
-    <!-- The upload UI is hidden until the user is signed in -->
     <div id="upload-container" style="display: none;">
       <input type="file" id="file-input" accept="image/*">
       <br>
       <button onclick="uploadFile()">Upload</button>
     </div>
-    
-    <!-- Status messages -->
+
     <div id="upload-status"></div>
 
-    <!-- Metadata form, shown when EXIF is available -->
     <div id="metadata-form" style="display:none; margin-top:20px;">
       <h3>Edit Photo Details</h3>
-      <img id="photo-preview" src="" style="max-width:300px; margin-bottom:15px;"><br>
-      
+      <img id="photo-preview" src="" style="margin-bottom:15px;"><br>
+
       <label>Date Taken:<br>
         <input type="date" id="date_taken">
       </label>
       <br><br>
-      
+
       <label>Location:<br>
         <input type="text" id="location" placeholder="Location">
       </label>
       <br><br>
-      
+
       <label>Your Name:<br>
         <input type="text" id="photographer" placeholder="Photographer">
       </label>
       <br><br>
-      
+
       <button onclick="submitMetadata()">Save Details</button>
     </div>
   </div>
@@ -144,18 +138,20 @@
       uploadTask.on("state_changed",
         snapshot => {
           const progress = (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
-          document.getElementById("upload-status").innerHTML = `<p>Upload is ${progress.toFixed(0)}% done</p>`;
+          // Updated progress message
+          document.getElementById("upload-status").innerHTML = `<p>Uploading your photo: ${progress.toFixed(0)}% complete...</p>`;
         },
         error => {
-          console.error("❌ Upload error:", error);
+          console.error("Upload error:", error); // Simplified error emoji
           alert("Error uploading file.");
         },
         () => {
           // Once upload finishes, get the URL
           uploadTask.snapshot.ref.getDownloadURL().then(downloadURL => {
             console.log("File available at", downloadURL);
+            // Updated completion message
             document.getElementById("upload-status").innerHTML =
-              `<p>✅ Upload complete! Waiting for Cloud Function to process EXIF data.</p>`;
+              `<p>Upload finished! Analyzing photo details (this might take a moment)...</p>`;
             pollForMetadata(downloadURL);
           }).catch(error => {
             console.error("Error retrieving URL:", error);
@@ -171,7 +167,7 @@
       let urlWithoutToken = originalDownloadURL.split('&token=')[0];
 
       const altIndex = urlWithoutToken.indexOf('?');
-      let pathPart = urlWithoutToken.substring(0, altIndex); 
+      let pathPart = urlWithoutToken.substring(0, altIndex);
       let queryPart = urlWithoutToken.substring(altIndex);
 
       // Insert "_p" before extension
@@ -193,22 +189,29 @@
               showMetadataForm(photo, photo.image_filename);
               clearInterval(intervalId);
               console.log("Metadata found:", photo);
-              document.getElementById("upload-status").innerHTML = "";
+              document.getElementById("upload-status").innerHTML = ""; // Clear status on form display
             }
           })
           .catch(error => {
             console.error("Error polling for metadata:", error);
+             // Maybe add a user-facing message here if polling fails repeatedly
+             // document.getElementById("upload-status").innerHTML = "<p>Error checking photo details. Please try refreshing.</p>";
+             // clearInterval(intervalId); // Stop polling on error
           });
       }, 3000);
     }
 
     function showMetadataForm(data, imageUrl) {
       document.getElementById('photo-preview').src = imageUrl;
-      document.getElementById('date_taken').value = data.date_taken 
-        ? data.date_taken.substring(0, 10)
+      document.getElementById('date_taken').value = data.date_taken
+        ? data.date_taken.substring(0, 10) // Extracts YYYY-MM-DD
         : '';
       document.getElementById('location').value = data.location || '';
-      document.getElementById('photographer').value = data.photographer || '';
+      // Pre-fill photographer name if available from user profile (example)
+      const user = firebase.auth().currentUser;
+      document.getElementById('photographer').value = data.photographer && data.photographer !== 'Unknown'
+        ? data.photographer
+        : (user && user.displayName ? user.displayName : ''); // Use display name if available and DB is Unknown
       document.getElementById('metadata-form').style.display = 'block';
     }
 
@@ -224,8 +227,11 @@
       })
         .then(res => res.json())
         .then(response => {
-          alert("✅ Details saved successfully!");
+          // Updated success alert (no emoji)
+          alert("Details saved successfully!");
           document.getElementById('metadata-form').style.display = 'none';
+          // Added final status message
+          document.getElementById("upload-status").innerHTML = `<p>Great! Your photo and details have been saved and sent for approval.</p>`;
         })
         .catch(error => {
           console.error("Error updating metadata:", error);
