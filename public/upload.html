@@ -180,7 +180,7 @@
       console.log("DEBUG: Polling for metadata with processed URL:", processedDownloadURL);
 
       const intervalId = setInterval(() => {
-        fetch(`${API_BASE_URL}/api/pending-photos`)
+        fetch(`${API_BASE_URL}/api/pending-photos`, { credentials: 'include' })
           .then(response => response.json())
           .then(photos => {
             const photo = photos.find(p => p.image_filename === processedDownloadURL);
