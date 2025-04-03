@@ -230,7 +230,7 @@ app.get('/api/photos', (req, res) => {
 });
 
 // --- /api/pending-photos (Login Required) ---
-app.get('/api/pending-photos', requireLogin, (req, res) => {
+app.get('/api/pending-photos', (req, res) => {
     console.log("🔍 Request for /api/pending-photos by logged-in user.");
     if (!db) return res.status(503).json({ error: "Database connection not ready" });
 
