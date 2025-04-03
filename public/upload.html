@@ -142,7 +142,7 @@
           document.getElementById("upload-status").innerHTML = `<p>Uploading your photo: ${progress.toFixed(0)}% complete...</p>`;
         },
         error => {
-          console.error("Upload error:", error); // Simplified error emoji
+          console.error("Upload error:", error);
           alert("Error uploading file.");
         },
         () => {
@@ -163,55 +163,80 @@
 
     // Poll the backend until the Cloud Function finishes
     function pollForMetadata(originalDownloadURL) {
-      // Remove token param
+      // --- URL processing logic ---
       let urlWithoutToken = originalDownloadURL.split('&token=')[0];
-
       const altIndex = urlWithoutToken.indexOf('?');
-      let pathPart = urlWithoutToken.substring(0, altIndex);
-      let queryPart = urlWithoutToken.substring(altIndex);
-
-      // Insert "_p" before extension
+      let pathPart = urlWithoutToken.substring(0, altIndex > 0 ? altIndex : urlWithoutToken.length);
+      let queryPart = altIndex > 0 ? urlWithoutToken.substring(altIndex) : '';
       const lastDotIndex = pathPart.lastIndexOf('.');
       const processedPathPart = (lastDotIndex !== -1)
         ? pathPart.substring(0, lastDotIndex) + '_p' + pathPart.substring(lastDotIndex)
         : pathPart + '_p';
-
       const processedDownloadURL = processedPathPart + queryPart;
       console.log("DEBUG: Polling for metadata with processed URL:", processedDownloadURL);
+      // --- End URL processing logic ---
 
       const intervalId = setInterval(() => {
-        fetch(`${API_BASE_URL}/api/pending-photos`, { credentials: 'include' })
-          .then(response => response.json())
-          .then(photos => {
-            const photo = photos.find(p => p.image_filename === processedDownloadURL);
-            if (photo && photo.date_taken && photo.date_taken !== "Unknown date") {
-              currentPhotoId = photo.id;
-              showMetadataForm(photo, photo.image_filename);
-              clearInterval(intervalId);
-              console.log("Metadata found:", photo);
-              document.getElementById("upload-status").innerHTML = ""; // Clear status on form display
+        // --- MODIFIED FETCH CALL START ---
+        fetch(`${API_BASE_URL}/api/pending-photos`, {
+            method: 'GET', // Specify method
+            headers: {
+                'Accept': 'application/json' // Explicitly request JSON
+            },
+            credentials: 'include' // Send cookies (session)
+        })
+        // --- MODIFIED FETCH CALL END ---
+          .then(response => {
+            // Check if the response is successful (status 200-299)
+            if (!response.ok) {
+                // If not OK, read the response as text to see the error/HTML
+                return response.text().then(text => {
+                     console.error("Received non-JSON response (Status: " + response.status + "):", text); // Log the actual response
+                     throw new Error(`HTTP error ${response.status}: ${response.statusText}`); // Throw error to be caught
+                });
             }
+            // Only parse JSON if response.ok is true
+            return response.json();
+          })
+          .then(photos => {
+            // Find the photo with the matching processed URL
+            const photo = photos.find(p => p.image_filename === processedDownloadURL);
+            // Ensure photo is found AND essential data like date_taken is present
+            if (photo && photo.date_taken) {
+              currentPhotoId = photo.id;
+              showMetadataForm(photo, photo.image_filename); // Pass original image URL if needed for preview, or processed one
+              clearInterval(intervalId); // Stop polling
+              console.log("Metadata found:", photo);
+              document.getElementById("upload-status").innerHTML = ""; // Clear status message
+            }
+            // If photo not found yet or date_taken missing, interval continues silently
           })
           .catch(error => {
             console.error("Error polling for metadata:", error);
-             // Maybe add a user-facing message here if polling fails repeatedly
-             // document.getElementById("upload-status").innerHTML = "<p>Error checking photo details. Please try refreshing.</p>";
-             // clearInterval(intervalId); // Stop polling on error
+            // Handle specific errors to stop polling or inform user
+            if (error instanceof SyntaxError) { // Indicates HTML was received
+                 document.getElementById("upload-status").innerHTML = "<p>Error checking photo status (session may have expired). Please refresh and sign in again.</p>";
+                 clearInterval(intervalId); // Stop polling on JSON parse error
+            } else if (error.message.includes('401') || error.message.includes('403')) { // Handle auth errors
+                 document.getElementById("upload-status").innerHTML = "<p>Error checking photo status (permission issue). Please refresh and sign in again.</p>";
+                 clearInterval(intervalId); // Stop polling on auth error
+            }
+            // For other errors (like network issues), polling continues by default
           });
-      }, 3000);
+      }, 3000); // Poll every 3 seconds
     }
 
     function showMetadataForm(data, imageUrl) {
-      document.getElementById('photo-preview').src = imageUrl;
+      document.getElementById('photo-preview').src = imageUrl; // Show the processed image URL
       document.getElementById('date_taken').value = data.date_taken
         ? data.date_taken.substring(0, 10) // Extracts YYYY-MM-DD
         : '';
       document.getElementById('location').value = data.location || '';
-      // Pre-fill photographer name if available from user profile (example)
+      // Pre-fill photographer name if available from user profile
       const user = firebase.auth().currentUser;
-      document.getElementById('photographer').value = data.photographer && data.photographer !== 'Unknown'
-        ? data.photographer
-        : (user && user.displayName ? user.displayName : ''); // Use display name if available and DB is Unknown
+      // Use DB photographer if set and not 'Unknown', otherwise try Firebase display name, fallback empty
+      const dbPhotographer = data.photographer && data.photographer !== 'Unknown' ? data.photographer : '';
+      document.getElementById('photographer').value = dbPhotographer || (user && user.displayName ? user.displayName : '');
       document.getElementById('metadata-form').style.display = 'block';
     }
 
@@ -220,22 +245,37 @@
       const location = document.getElementById('location').value;
       const photographer = document.getElementById('photographer').value;
 
-      fetch('/api/update-photo-details', {
+      if (!currentPhotoId) {
+           alert("Error: Photo ID is missing. Cannot save details.");
+           return;
+      }
+
+      fetch('/api/update-photo-details', { // Assuming this endpoint exists on your server
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+             'Content-Type': 'application/json',
+             'Accept': 'application/json' // Good practice to include Accept here too
+             },
+        // Body includes only fields being updated from this form
         body: JSON.stringify({ photo_id: currentPhotoId, date_taken, location, photographer })
       })
-        .then(res => res.json())
         .then(response => {
-          // Updated success alert (no emoji)
-          //alert("Details saved successfully!");
+            if (!response.ok) {
+                return response.json().then(err => { throw new Error(err.error || `HTTP error ${response.status}`) });
+            }
+            return response.json();
+        })
+        .then(response => {
+          console.log("Metadata saved:", response);
           document.getElementById('metadata-form').style.display = 'none';
-          // Added final status message
+          // Updated final status message
           document.getElementById("upload-status").innerHTML = `<p>Great! Your photo and details have been saved and sent for approval.</p>`;
+          // Clear currentPhotoId maybe?
+          // currentPhotoId = null;
         })
         .catch(error => {
           console.error("Error updating metadata:", error);
-          alert("Error updating metadata.");
+          alert(`Error saving details: ${error.message}`); // Show specific error
         });
     }
 
