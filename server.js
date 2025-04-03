@@ -178,7 +178,6 @@ app.get('/api/photos', (req, res) => {
     console.log("🔍 Received request for /api/photos");
     if (!db) return res.status(503).json({ error: "Database connection not ready" });
 
-    // Use a SQLite-friendly approach to produce "Species A, Species B" with spaces
     const query = `
         SELECT
             bp.id, 
@@ -229,9 +228,9 @@ app.get('/api/photos', (req, res) => {
     });
 });
 
-// --- /api/pending-photos (Login Required) ---
+// --- /api/pending-photos ---
 app.get('/api/pending-photos', (req, res) => {
-    console.log("🔍 Request for /api/pending-photos by logged-in user.");
+    console.log("🔍 Request for /api/pending-photos.");
     if (!db) return res.status(503).json({ error: "Database connection not ready" });
 
     const query = `
@@ -282,7 +281,373 @@ app.get('/api/pending-photos', (req, res) => {
     });
 });
 
-// ... rest of your routes remain unchanged (add-photo, update-species, etc.) ...
+// --- /api/add-photo ---
+app.post('/api/add-photo', (req, res) => {
+    // If you want to protect this route (e.g., from Cloud Function only), do it here
+    if (!db) return res.status(503).json({ error: "Database connection not ready" });
+
+    const { image_url, date_taken, location, latitude, longitude, photographer, species_suggestions } = req.body;
+    if (!image_url) {
+        return res.status(400).json({ error: "Missing image_url" });
+    }
+
+    const findUserQuery = `SELECT id FROM users WHERE name = ? COLLATE NOCASE`;
+    const insertUserQuery = `INSERT INTO users (name) VALUES (?)`;
+    const photographerName = photographer || "Unknown";
+
+    db.get(findUserQuery, [photographerName], (err, user) => {
+        if (err) {
+            console.error("DB error finding user:", err.message);
+            return res.status(500).json({ error: "DB error finding user" });
+        }
+        const insertPhoto = (p_id) => {
+            const query = `
+                INSERT INTO bird_photos
+                  (image_filename, date_taken, location, latitude, longitude, approved, photographer_id, species_suggestions)
+                VALUES (?, ?, ?, ?, ?, 0, ?, ?)
+            `;
+            const params = [
+                image_url,
+                date_taken || null,
+                location || "Unknown",
+                latitude || null,
+                longitude || null,
+                p_id,
+                species_suggestions || null
+            ];
+            db.run(query, params, function (err2) {
+                if (err2) {
+                    console.error("Failed to add photo record:", err2.message);
+                    return res.status(500).json({ error: "Failed to add photo record" });
+                }
+                console.log(`✅ Photo record added. ID: ${this.lastID}, Suggestion: ${species_suggestions}`);
+                return res.status(201).json({ photo_id: this.lastID });
+            });
+        };
+
+        if (user) {
+            insertPhoto(user.id);
+        } else if (photographerName !== "Unknown") {
+            db.run(insertUserQuery, [photographerName], function (insertErr) {
+                if (insertErr) {
+                    console.error("Failed to add photographer:", insertErr.message);
+                    return res.status(500).json({ error: "Failed to add photographer" });
+                }
+                insertPhoto(this.lastID);
+            });
+        } else {
+            insertPhoto(null);
+        }
+    });
+});
+
+// --- /api/species-suggestions (public text-based)
+app.get('/api/species-suggestions', async (req, res) => {
+    const { query } = req.query;
+    if (!query || query.length < 2) {
+        return res.json([]);
+    }
+    const lowerQuery = query.toLowerCase();
+    // Filter from allSpecies
+    const filtered = allSpecies
+        .filter(name => name.toLowerCase().includes(lowerQuery))
+        .sort((a, b) => {
+            const aStarts = a.toLowerCase().startsWith(lowerQuery) ? 0 : 1;
+            const bStarts = b.toLowerCase().startsWith(lowerQuery) ? 0 : 1;
+            return aStarts - bStarts || a.localeCompare(b);
+        })
+        .slice(0, 7);
+
+    res.json(filtered);
+});
+
+// --- /api/update-species (requires login if you want to protect it) ---
+app.post('/api/update-species', (req, res) => {
+    if (!db) return res.status(503).json({ error: "Database connection not ready" });
+    const { photo_id, common_name } = req.body;
+    if (!photo_id || !common_name) {
+        return res.status(400).json({ error: "Missing photo_id or common_name" });
+    }
+
+    // Try to find existing species
+    const findSpeciesQuery = `SELECT id FROM bird_species WHERE common_name = ? COLLATE NOCASE`;
+    db.get(findSpeciesQuery, [common_name], async (err, species) => {
+        if (err) {
+            console.error("DB error finding species:", err.message);
+            return res.status(500).json({ error: "Failed to find species" });
+        }
+        if (species) {
+            linkSpeciesToPhoto(photo_id, species.id, res, common_name);
+        } else {
+            // Insert new species if not found
+            let scientificName = null, family = null, orderName = null, status = "LC";
+
+            try {
+                const response = await axios.get(`https://api.ebird.org/v2/ref/taxonomy/ebird?fmt=json`, {
+                    headers: { "User-Agent": "BirdPhotosApp/1.0" }
+                });
+                const speciesMatch = response.data.find(s => s.comName.toLowerCase() === common_name.toLowerCase());
+                if (speciesMatch) {
+                    scientificName = speciesMatch.sciName;
+                    family = speciesMatch.familyComName;
+                    orderName = speciesMatch.order;
+                    // Use speciesMatch.extinct? or speciesMatch.reportAs? etc.
+                } else {
+                    console.warn(`⚠️ No eBird match for: ${common_name}`);
+                }
+            } catch (apiError) {
+                console.error("❌ Error contacting eBird:", apiError.message);
+            }
+
+            const insertSpeciesQuery = `
+                INSERT INTO bird_species (common_name, scientific_name, family, order_name, status)
+                VALUES (?, ?, ?, ?, ?)
+            `;
+            db.run(insertSpeciesQuery, [common_name, scientificName, family, orderName, status], function (insertErr) {
+                if (insertErr) {
+                    console.error("❌ Error inserting species:", insertErr.message);
+                    return res.status(500).json({ error: "Failed to insert species" });
+                }
+                linkSpeciesToPhoto(photo_id, this.lastID, res, common_name);
+            });
+        }
+    });
+});
+
+// Helper: linkSpeciesToPhoto
+function linkSpeciesToPhoto(photo_id, species_id, res, common_name) {
+    if (!db) {
+        console.error("DB is not available in linkSpeciesToPhoto");
+        return;
+    }
+    const checkExisting = `SELECT 1 FROM bird_photo_species WHERE photo_id = ? AND species_id = ?`;
+    db.get(checkExisting, [photo_id, species_id], (err, row) => {
+        if (err) {
+            console.error("❌ Error checking existing link:", err.message);
+            if (!res.headersSent) return res.status(500).json({ error: "DB error" });
+        }
+        if (row) {
+            console.log(`ℹ️ Link already exists: Photo ${photo_id}, Species ${species_id}`);
+            if (!res.headersSent) return res.json({ message: "Species already linked" });
+        } else {
+            const insertRel = `INSERT INTO bird_photo_species (photo_id, species_id) VALUES (?, ?)`;
+            db.run(insertRel, [photo_id, species_id], function (err2) {
+                if (err2) {
+                    console.error("❌ Error linking species:", err2.message);
+                    if (!res.headersSent) return res.status(500).json({ error: "Failed linking species" });
+                }
+                console.log(`✅ Linked species ${species_id} (${common_name}) to photo ${photo_id}`);
+                if (!res.headersSent) res.json({ message: "Species linked successfully" });
+            });
+        }
+    });
+}
+
+// --- /api/remove-species
+app.post('/api/remove-species', (req, res) => {
+    if (!db) return res.status(503).json({ error: "Database connection not ready" });
+    const { photo_id, common_name } = req.body;
+    if (!photo_id || !common_name) {
+        return res.status(400).json({ error: "Missing photo_id or common_name" });
+    }
+    const findQ = `SELECT id FROM bird_species WHERE common_name = ? COLLATE NOCASE`;
+    db.get(findQ, [common_name], (err, species) => {
+        if (err) {
+            console.error("DB error finding species:", err.message);
+            return res.status(500).json({ error: "DB error" });
+        }
+        if (!species) {
+            return res.status(404).json({ error: "Species not found" });
+        }
+        const delQ = `DELETE FROM bird_photo_species WHERE photo_id = ? AND species_id = ?`;
+        db.run(delQ, [photo_id, species.id], function (err2) {
+            if (err2) {
+                console.error("❌ Error removing species link:", err2.message);
+                return res.status(500).json({ error: "DB error removing link" });
+            }
+            if (this.changes === 0) {
+                return res.status(404).json({ message: "Species link not found for this photo" });
+            }
+            console.log(`✅ Species removed from photo ${photo_id}: ${common_name}`);
+            res.json({ message: "Species removed successfully" });
+        });
+    });
+});
+
+// --- /api/update-photo-details
+app.post('/api/update-photo-details', (req, res) => {
+    if (!db) return res.status(503).json({ error: "Database not ready" });
+    const { photo_id, date_taken, location, photographer } = req.body;
+    if (!photo_id) return res.status(400).json({ error: "Missing photo_id" });
+
+    let fieldsToUpdate = [];
+    let params = [];
+    let photographerIdToSet = undefined;
+
+    const doUpdate = () => {
+        if (photographerIdToSet !== undefined) {
+            fieldsToUpdate.push("photographer_id = ?");
+            params.push(photographerIdToSet);
+        }
+        if (date_taken !== undefined) {
+            fieldsToUpdate.push("date_taken = ?");
+            params.push(date_taken || null);
+        }
+        if (location !== undefined) {
+            fieldsToUpdate.push("location = ?");
+            params.push(location || 'Unknown');
+        }
+        if (fieldsToUpdate.length === 0) {
+            return res.status(400).json({ error: "No update fields provided" });
+        }
+        params.push(photo_id);
+        const query = `UPDATE bird_photos SET ${fieldsToUpdate.join(', ')} WHERE id = ?`;
+        db.run(query, params, function (err) {
+            if (err) {
+                console.error("❌ Error updating photo details:", err.message);
+                return res.status(500).json({ error: "Failed update photo details" });
+            }
+            if (this.changes === 0) {
+                return res.status(404).json({ error: "Photo not found" });
+            }
+            console.log(`✅ Photo ${photo_id} updated successfully.`);
+            return res.json({ message: "Details updated successfully" });
+        });
+    };
+
+    // If we need to update "photographer"
+    if (photographer !== undefined) {
+        const photographerName = photographer || 'Unknown';
+        const findUserQ = `SELECT id FROM users WHERE name = ? COLLATE NOCASE`;
+        const insertUserQ = `INSERT INTO users (name) VALUES (?)`;
+
+        db.get(findUserQ, [photographerName], (err, user) => {
+            if (err) {
+                console.error("DB error finding user:", err.message);
+                return res.status(500).json({ error: "DB error finding user" });
+            }
+            if (user) {
+                photographerIdToSet = user.id;
+                doUpdate();
+            } else if (photographerName !== 'Unknown') {
+                db.run(insertUserQ, [photographerName], function (insertErr) {
+                    if (insertErr) {
+                        console.error("DB error adding user:", insertErr.message);
+                        return res.status(500).json({ error: "DB error adding user" });
+                    }
+                    photographerIdToSet = this.lastID;
+                    doUpdate();
+                });
+            } else {
+                photographerIdToSet = null;
+                doUpdate();
+            }
+        });
+    } else {
+        doUpdate();
+    }
+});
+
+// --- /api/approve-photo
+app.post('/api/approve-photo', (req, res) => {
+    if (!db) return res.status(503).json({ error: "Database not ready" });
+    const { photo_id } = req.body;
+    if (!photo_id) return res.status(400).json({ error: "Missing photo_id" });
+
+    const query = `UPDATE bird_photos SET approved = 1 WHERE id = ? AND (approved != 1 OR approved IS NULL)`;
+    db.run(query, [photo_id], function (err) {
+        if (err) {
+            console.error("❌ Error approving photo:", err.message);
+            return res.status(500).json({ error: "Error approving photo" });
+        }
+        if (this.changes === 0) {
+            return res.status(200).json({ message: "Photo already approved or not found" });
+        }
+        console.log(`✅ Photo ${photo_id} approved.`);
+        res.json({ message: "Photo approved successfully" });
+    });
+});
+
+// --- /api/delete-photo
+app.post('/api/delete-photo', (req, res) => {
+    if (!db) return res.status(503).json({ error: "Database not ready" });
+    const { photo_id } = req.body;
+    if (!photo_id) return res.status(400).json({ error: "Missing photo_id" });
+
+    // 1) Find the record
+    const selectQ = `SELECT image_filename FROM bird_photos WHERE id = ?`;
+    db.get(selectQ, [photo_id], (err, row) => {
+        if (err) {
+            console.error("❌ DB error finding photo:", err.message);
+            return res.status(500).json({ error: "DB error finding photo" });
+        }
+        if (!row) {
+            return res.status(404).json({ error: "Photo record not found" });
+        }
+        const fileUrl = row.image_filename;
+
+        // Wrap in a transaction
+        db.serialize(() => {
+            db.run("BEGIN TRANSACTION;");
+            let success = true;
+
+            // Delete from bird_photo_species
+            db.run(`DELETE FROM bird_photo_species WHERE photo_id = ?`, [photo_id], function (linkErr) {
+                if (linkErr) {
+                    success = false;
+                    console.error("❌ Error deleting species links:", linkErr.message);
+                } else {
+                    console.log(`✅ Deleted ${this.changes} species links for photo ${photo_id}`);
+                }
+            });
+
+            // Delete from bird_photos
+            db.run(`DELETE FROM bird_photos WHERE id = ?`, [photo_id], function (photoErr) {
+                if (photoErr) {
+                    success = false;
+                    console.error("❌ Error deleting photo:", photoErr.message);
+                } else if (this.changes === 0) {
+                    success = false;
+                    console.warn(`⚠️ Photo ${photo_id} not found during delete?`);
+                } else {
+                    console.log(`✅ Photo ${photo_id} deleted from DB.`);
+                }
+            });
+
+            db.run(success ? "COMMIT;" : "ROLLBACK;", async (commitErr) => {
+                if (commitErr || !success) {
+                    console.error(commitErr ? `❌ Txn Error: ${commitErr.message}` : `❌ Txn rolled back.`);
+                    if (!res.headersSent) res.status(500).json({ error: "DB delete failed" });
+                    return;
+                }
+                console.log("✅ DB Deletion Txn successful.");
+
+                // Optionally remove file from Firebase Storage – depends if you want that or not
+                let decodedPath = null;
+                if (fileUrl && fileUrl.includes('/o/')) {
+                    try {
+                        const urlObj = new URL(fileUrl);
+                        const pathPart = urlObj.pathname.split('/o/')[1];
+                        if (pathPart) {
+                            decodedPath = decodeURIComponent(pathPart);
+                        }
+                    } catch (urlParseError) {
+                        console.warn("⚠️ URL parse error in deletePhoto:", urlParseError.message);
+                    }
+                }
+
+                if (decodedPath) {
+                    // For real deletion, you'd do admin.storage().bucket(...).file(decodedPath).delete() if set up
+                    console.log(`⚠️ Skipped Firebase file deletion. If needed, do it with your admin SDK. Path: "${decodedPath}"`);
+                }
+
+                if (!res.headersSent) {
+                    res.json({ message: "Photo deleted successfully" });
+                }
+            });
+        });
+    });
+});
 
 // Fallback
 app.get('*', (req, res) => {
