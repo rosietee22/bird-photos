@@ -115,6 +115,12 @@ a, a:visited, a:hover, a:active {
     }
 }
 
+.about-text {
+    max-width: 400px;
+    margin: auto;
+    margin-bottom: 40px;
+}
+
 #photo-preview {
     display: block; /* Ensure it behaves like a block for centering/margins */
     margin-left: auto;
@@ -355,7 +361,7 @@ a {
 /* Slideshow container */
 .slideshow-container {
     width: 100%;
-    max-width: 300px;
+    max-width: 230px;
     height: auto;
     margin: 0 auto; 
     padding: 0;

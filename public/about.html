@@ -43,13 +43,40 @@
 
     <!-- Main content -->
     <main>
-        <p>Bird Pics is a collection of bird photos sll taken on phones. If you would like to contribute, sign in with Google on the
-            <a href="/upload">Upload page</a> and submit your images. I’ll review each photo and tag the bird species before publishing it.</p>
+        <div class="about-text">
+            <p>Bird Pics is a collection of bird photos all taken on phones. If you would like to contribute, sign in
+                with Google on the
+                <a href="/upload">Upload page</a> and submit your images. I’ll review each photo and tag the bird
+                species before publishing it.
+            </p>
+        </div>
+        <!-- Slideshow Container -->
+        <div class="slideshow-container">
+            <img class="slide" src="assets/bird1.jpg" alt="Bird Photo">
+            <img class="slide" src="assets/bird2.jpg" alt="Bird Photo">
+            <img class="slide" src="assets/bird3.jpg" alt="Bird Photo">
+        </div>
+
     </main>
 
     <script src="script.js"></script>
     <script>
 
+        document.addEventListener("DOMContentLoaded", () => {
+            let slideIndex = 0;
+            const slides = document.querySelectorAll(".slide");
+            const slideDuration = 2500; // 2.5 seconds
+
+            function showSlides() {
+                slides.forEach(slide => slide.style.display = "none"); // Hide all slides
+                slideIndex++;
+                if (slideIndex > slides.length) { slideIndex = 1; } // Loop back to the start
+                slides[slideIndex - 1].style.display = "block"; // Show current slide
+                setTimeout(showSlides, slideDuration);
+            }
+
+            showSlides(); // Start the slideshow
+        });
         // Sticky header on mobile only when scrolled
         document.addEventListener("DOMContentLoaded", () => {
             const header = document.querySelector(".site-header");
