@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bird Pictures</title>
+    <link rel="stylesheet" href="styles.css">
+    <link rel="icon" type="image/png" href="assets/favicon.png">
+    <!-- Open Graph meta tags for link previews -->
+    <meta property="og:title" content="Bird Pictures">
+    <meta property="og:description" content="A log of bird sightings around towns">
+    <meta property="og:image" content="https://firebasestorage.googleapis.com/v0/b/bird-pictures-953b0.firebasestorage.app/o/bird3.jpg?alt=media">
+    <meta property="og:url" content="https://birdpics.pics">
+    <meta property="og:type" content="website">
+</head> 
+
+<!-- Google tag (gtag.js) -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-Q6BXSD8K0P"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+
+  gtag('config', 'G-Q6BXSD8K0P');
+</script>
+
+<body class="index-page">
+    <img src="assets/logo2.png" alt="Bird Pictures Logo" class="logo">
+    <br>
+    <a href="/home" class="button">ENTER</a>
+
+    <!-- Slideshow Container -->
+    <div class="slideshow-container">
+        <img class="slide" src="assets/bird1.jpg" alt="Bird Photo">
+        <img class="slide" src="assets/bird2.jpg" alt="Bird Photo">
+        <img class="slide" src="assets/bird3.jpg" alt="Bird Photo">
+    </div>
+
+    <script>
+        document.addEventListener("DOMContentLoaded", () => {
+            let slideIndex = 0;
+            const slides = document.querySelectorAll(".slide");
+            const slideDuration = 2500; // 2.5 seconds
+
+            function showSlides() {
+                slides.forEach(slide => slide.style.display = "none"); // Hide all slides
+                slideIndex++;
+                if (slideIndex > slides.length) { slideIndex = 1; } // Loop back to the start
+                slides[slideIndex - 1].style.display = "block"; // Show current slide
+                setTimeout(showSlides, slideDuration);
+            }
+
+            showSlides(); // Start the slideshow
+        });
+    </script>
+</body>
+
+</html>

@@ -9,11 +9,11 @@
   <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&display=swap" rel="stylesheet">
   <link rel="icon" type="image/png" href="assets/favicon.png">
   <!-- Open Graph meta tags -->
-  <meta property="og:title" content="Bird Pictures">
-  <meta property="og:description" content="A log of bird sightings around towns">
+  <meta property="og:title" content="About Bird Pics">
+  <meta property="og:description" content="About Bird Pics">
   <meta property="og:image"
     content="https://firebasestorage.googleapis.com/v0/b/bird-pictures-953b0.firebasestorage.app/o/bird3.jpg?alt=media">
-  <meta property="og:url" content="https://birdpics.pics">
+  <meta property="og:url" content="https://birdpics.pics/about">
   <meta property="og:type" content="website">
 </head>
 
@@ -31,48 +31,23 @@
   <!-- Header (common for desktop and mobile) -->
   <header class="site-header">
     <div class="header-logo">
-      <a href="/home"><img src="assets/logo2.png" alt="Bird Pictures Logo" class="logo"></a>
+      <a href="/"><img src="assets/logo2.png" alt="Bird Pictures Logo" class="logo"></a>
     </div>
     <nav class="header-nav">
       <a href="/upload" class="top-button">
-        <img src="assets/profile.png" alt="Lock Icon">
+        <img src="assets/profile.png" alt="Profile Icon">
         Upload
       </a>
-      <a href=# class="top-button">
-        About
-      </a>
     </nav>
-  </header>`
+  </header>
 
   <!-- Main content -->
   <main>
     <p>A log of bird sightings around towns</p>
-    <!-- Species Filter Dropdown -->
-    <div class="filter-container">
-      <label for="species-filter">Filter by species:</label>
-      <select id="species-filter" onchange="filterPhotos()">
-        <option value="all">All Species</option>
-      </select>
-    </div>
-    <div id="photo-gallery"></div>
   </main>
 
   <script src="script.js"></script>
   <script>
-    //let allPhotos = [];
-
-    function fetchPhotos() {
-      fetch("/api/photos")
-        .then(response => response.json())
-        .then(photos => {
-          allPhotos = photos;
-          populateSpeciesFilter(photos);
-          displayPhotos(photos);
-        })
-        .catch(error => console.error("❌ Error fetching photos:", error));
-    }
-
-    document.addEventListener("DOMContentLoaded", fetchPhotos);
 
     // Sticky header on mobile only when scrolled
     document.addEventListener("DOMContentLoaded", () => {
