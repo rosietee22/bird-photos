@@ -2,98 +2,99 @@
 <html lang="en">
 
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Bird Photos</title>
-  <link rel="stylesheet" href="styles.css">
-  <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&display=swap" rel="stylesheet">
-  <link rel="icon" type="image/png" href="assets/favicon.png">
-  <!-- Open Graph meta tags -->
-  <meta property="og:title" content="About Bird Pics">
-  <meta property="og:description" content="About Bird Pics">
-  <meta property="og:image"
-    content="https://firebasestorage.googleapis.com/v0/b/bird-pictures-953b0.firebasestorage.app/o/bird3.jpg?alt=media">
-  <meta property="og:url" content="https://birdpics.pics/about">
-  <meta property="og:type" content="website">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bird Photos</title>
+    <link rel="stylesheet" href="styles.css">
+    <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&display=swap" rel="stylesheet">
+    <link rel="icon" type="image/png" href="assets/favicon.png">
+    <!-- Open Graph meta tags -->
+    <meta property="og:title" content="About Bird Pics">
+    <meta property="og:description" content="About Bird Pics">
+    <meta property="og:image"
+        content="https://firebasestorage.googleapis.com/v0/b/bird-pictures-953b0.firebasestorage.app/o/bird3.jpg?alt=media">
+    <meta property="og:url" content="https://birdpics.pics/about">
+    <meta property="og:type" content="website">
 </head>
 
 <!-- Google tag (gtag.js) -->
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-Q6BXSD8K0P"></script>
 <script>
-  window.dataLayer = window.dataLayer || [];
-  function gtag(){dataLayer.push(arguments);}
-  gtag('js', new Date());
+    window.dataLayer = window.dataLayer || [];
+    function gtag() { dataLayer.push(arguments); }
+    gtag('js', new Date());
 
-  gtag('config', 'G-Q6BXSD8K0P');
+    gtag('config', 'G-Q6BXSD8K0P');
 </script>
 
 <body>
-  <!-- Header (common for desktop and mobile) -->
-  <header class="site-header">
-    <div class="header-logo">
-      <a href="/"><img src="assets/logo2.png" alt="Bird Pictures Logo" class="logo"></a>
-    </div>
-    <nav class="header-nav">
-      <a href="/upload" class="top-button">
-        <img src="assets/profile.png" alt="Profile Icon">
-        Upload
-      </a>
-    </nav>
-  </header>
+    <!-- Header (common for desktop and mobile) -->
+    <header class="site-header">
+        <div class="header-logo">
+            <a href="/"><img src="assets/logo2.png" alt="Bird Pictures Logo" class="logo"></a>
+        </div>
+        <nav class="header-nav">
+            <a href="/upload" class="top-button">
+                <img src="assets/profile.png" alt="Profile Icon">
+                Upload
+            </a>
+        </nav>
+    </header>
 
-  <!-- Main content -->
-  <main>
-    <p>A log of bird sightings around towns</p>
-  </main>
+    <!-- Main content -->
+    <main>
+        <p>Bird Pics is a collection of bird photos sll taken on phones. If you would like to contribute, sign in with Google on the
+            <a href="/upload">Upload page</a> and submit your images. I’ll review each photo and tag the bird species before publishing it.</p>
+    </main>
 
-  <script src="script.js"></script>
-  <script>
+    <script src="script.js"></script>
+    <script>
 
-    // Sticky header on mobile only when scrolled
-    document.addEventListener("DOMContentLoaded", () => {
-      const header = document.querySelector(".site-header");
+        // Sticky header on mobile only when scrolled
+        document.addEventListener("DOMContentLoaded", () => {
+            const header = document.querySelector(".site-header");
 
-      // Function to update header state
-      function updateHeaderState() {
-        if (window.innerWidth <= 600) { // only on mobile
-          if (window.scrollY > 50) {
-            header.classList.add("sticky");
-            document.body.classList.add("has-sticky-header");
-          } else {
-            header.classList.remove("sticky");
-            document.body.classList.remove("has-sticky-header");
-          }
-        }
-      }
+            // Function to update header state
+            function updateHeaderState() {
+                if (window.innerWidth <= 600) { // only on mobile
+                    if (window.scrollY > 50) {
+                        header.classList.add("sticky");
+                        document.body.classList.add("has-sticky-header");
+                    } else {
+                        header.classList.remove("sticky");
+                        document.body.classList.remove("has-sticky-header");
+                    }
+                }
+            }
 
-      // Throttle scroll events for better performance
-      let ticking = false;
-      window.addEventListener("scroll", () => {
-        if (!ticking) {
-          window.requestAnimationFrame(() => {
+            // Throttle scroll events for better performance
+            let ticking = false;
+            window.addEventListener("scroll", () => {
+                if (!ticking) {
+                    window.requestAnimationFrame(() => {
+                        updateHeaderState();
+                        ticking = false;
+                    });
+                    ticking = true;
+                }
+            });
+
+            // Handle resize events
+            window.addEventListener("resize", () => {
+                if (window.innerWidth > 600) {
+                    // Remove sticky on desktop
+                    header.classList.remove("sticky");
+                    document.body.classList.remove("has-sticky-header");
+                } else {
+                    // Re-check scroll position on mobile
+                    updateHeaderState();
+                }
+            });
+
+            // Initial check
             updateHeaderState();
-            ticking = false;
-          });
-          ticking = true;
-        }
-      });
-
-      // Handle resize events
-      window.addEventListener("resize", () => {
-        if (window.innerWidth > 600) {
-          // Remove sticky on desktop
-          header.classList.remove("sticky");
-          document.body.classList.remove("has-sticky-header");
-        } else {
-          // Re-check scroll position on mobile
-          updateHeaderState();
-        }
-      });
-
-      // Initial check
-      updateHeaderState();
-    });
-  </script>
+        });
+    </script>
 </body>
 
 </html>
