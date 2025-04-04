@@ -108,14 +108,14 @@ app.get('/approval', requireLogin, (req, res) => {
     res.sendFile(path.join(FRONTEND_DIR, 'approval.html'));
 });
 
-app.get('/about', requireLogin, (req, res) => {
+app.get('/about', (req, res) => {
     res.sendFile(path.join(FRONTEND_DIR, 'about.html'));
 });
 
 // Login
 app.get('/login', (req, res) => {
     if (req.session.loggedIn) {
-        return res.redirect('/approval');
+        return res.redirect('/');
     }
     res.send(`
       <!DOCTYPE html>
