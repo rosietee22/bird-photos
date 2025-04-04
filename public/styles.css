@@ -60,9 +60,9 @@ a, a:visited, a:hover, a:active {
 }
 
 .header-nav a.top-button img {
-    width: 16px;
+    width: 14px;
     vertical-align: middle;
-    margin-right: 4px;
+    margin-right: 0px;
 }
 
 /* Fix for sticky header on short pages */
@@ -302,7 +302,6 @@ a {
     top: 0;
     left: 0;
     padding: 10px;
-    font-style: italic;
     max-width: 100%;
     text-align: center;
 }
