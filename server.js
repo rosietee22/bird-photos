@@ -92,8 +92,8 @@ function requireLogin(req, res, next) {
 }
 
 // --- Page Routes ---
-app.get('/home', (req, res) => {
-    res.sendFile(path.join(FRONTEND_DIR, 'home.html'));
+app.get('/landing', (req, res) => {
+    res.sendFile(path.join(FRONTEND_DIR, 'landing.html'));
 });
 
 app.get('/admin', requireLogin, (req, res) => {
@@ -106,6 +106,10 @@ app.get('/upload', (req, res) => {
 
 app.get('/approval', requireLogin, (req, res) => {
     res.sendFile(path.join(FRONTEND_DIR, 'approval.html'));
+});
+
+app.get('/about', requireLogin, (req, res) => {
+    res.sendFile(path.join(FRONTEND_DIR, 'about.html'));
 });
 
 // Login
