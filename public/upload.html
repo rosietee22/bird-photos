@@ -151,7 +151,7 @@
             console.log("File available at", downloadURL);
             // Updated completion message
             document.getElementById("upload-status").innerHTML =
-              `<p>Upload finished! Analyzing photo details (this might take a moment)...</p>`;
+              `<p>Upload finished! Analysing photo details (this might take a moment)...</p>`;
             pollForMetadata(downloadURL);
           }).catch(error => {
             console.error("Error retrieving URL:", error);
